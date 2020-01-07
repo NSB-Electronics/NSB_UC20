@@ -274,10 +274,17 @@ int TCP::ReadBuffer(unsigned char contexid , int max_len)
 	unsigned long currentMillis ; 
 	unsigned char flag=0;  
 		
-	gsm.print(F("AT+QIRD="));
-	gsm.print(String(contexid));
-	gsm.print(",");
-	gsm.println(String(max_len));
+//	gsm.print(F("AT+QIRD="));
+//	gsm.print(String(contexid));
+//	gsm.print(",");
+//	gsm.println(String(max_len));
+	
+	String str = "AT+QIRD=";
+		str += String(contexid);
+		str	+= ",";
+		str	+= String(max_len);
+	gsm.debug(str);
+	gsm.println(str);
 	while(1)
 	{
 		currentMillis = millis();
@@ -288,7 +295,11 @@ int TCP::ReadBuffer(unsigned char contexid , int max_len)
 			{
 				int index = req.indexOf(F(" "));
 				//Serial.println(req);
-				return(req.substring(index+1).toInt());	
+				int tmp = req.substring(index+1).toInt();
+				if (tmp != 0) {
+					return(tmp);	
+				}
+				//return(req.substring(index+1).toInt());	
 			}
 		}
 		if(currentMillis - previousMillis >= interval)
@@ -300,6 +311,7 @@ int TCP::ReadBuffer(unsigned char contexid , int max_len)
 			gsm.print(String(contexid));
 			gsm.print(",");
 			gsm.println(String(max_len));
+			previousMillis = millis(); 
 		}
 	}
 }
