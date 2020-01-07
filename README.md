@@ -1,3 +1,6 @@
+# NSB_UC20
+Forked library from TEE_UC20_Shield and modified for our application.
+
 # TEE_UC20_Shield
 Libraly and Example code Quectel UC20 3G Shield for Arduino Board.
 
