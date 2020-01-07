@@ -51,10 +51,6 @@ void setup() {
   
   Serial.println(F("I:\tInit Modem"));
   #if FORCE_REBOOT
-    if (gsm.waitOK()) {
-      Serial.println(F("I:\tUC20 Ready..."));
-      gsm.setEchoMode(false);
-    } else {
       // Modem not responding, hard reset
       Serial.println("I:\tSoftware Reset Modem");
       gsm.setAutoReset(1, 0); // For now doing soft reset, don't have access to UC20 reset pin
@@ -62,8 +58,11 @@ void setup() {
       //gsm.PowerOn();
       Serial.print("I:\tWait for Modem Ready: ");
       Serial.println(gsm.waitReady());
-    }
   #else
+    if (gsm.waitOK()) {
+      Serial.println(F("I:\tUC20 Ready..."));
+      gsm.setEchoMode(false);
+    } else {
     // Modem not responding, hard reset
     Serial.println("I:\tSoftware Reset Modem");
     gsm.setAutoReset(1, 0); // For now doing soft reset, don't have access to UC20 reset pin
@@ -71,6 +70,7 @@ void setup() {
     //gsm.PowerOn();
     Serial.print("I:\tWait for Modem Ready: ");
     Serial.println(gsm.waitReady());
+    }
   #endif
 
   Serial.println("I:\tReset to Defaults");
@@ -112,7 +112,7 @@ void setup() {
 
 
   feedName.concat(MQTT_USER);
-  feedName.concat("/feeds/testMQTT");
+  feedName.concat("/feeds/testmqtt");
 
   mqtt.callback = callback;
   
