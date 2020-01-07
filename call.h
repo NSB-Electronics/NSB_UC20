@@ -1,6 +1,6 @@
 #ifndef UC20_CALL
 #define UC20_CALL
-#include "TEE_UC20.h"
+#include "NSB_UC20.h"
 
 class CALL 
 {

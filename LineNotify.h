@@ -1,7 +1,7 @@
 #ifndef LINE_NOTIFY_h
 #define LINE_NOTIFY_h
 
-#include "TEE_UC20.h"
+#include "NSB_UC20.h"
 #include "ssl.h"
 
 #define CONTEX 1

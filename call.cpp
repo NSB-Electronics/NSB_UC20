@@ -1,5 +1,4 @@
 #include "call.h"
-#include "TEE_UC20.h"
 
 CALL:: CALL(){}
 

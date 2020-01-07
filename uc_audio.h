@@ -1,7 +1,7 @@
 #ifndef UCAUDIO_h
 #define UCAUDIO
 
-#include "TEE_UC20.h"
+#include "NSB_UC20.h"
 #define UPLINK false
 #define DOWNLINK true
 

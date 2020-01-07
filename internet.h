@@ -1,7 +1,7 @@
 #ifndef INTERNET_h
 #define INTERNET_h
 
-#include "TEE_UC20.h"
+#include "NSB_UC20.h"
 
 
 class INTERNET

@@ -1,46 +1,67 @@
+// Based on TEE_UG20 by ThaiEasyElec
+// https://github.com/ThaiEasyElec/TEE_UC20_Shield
+
 #ifndef UC20_h
 #define UC20_h
 
-#define ATLSOFTSERIAL 1
+#define DEBUG 1
+
+#define ATLSOFTSERIAL 0
+#define SOFTSERIAL 0
 
 #include <Arduino.h>
 #include <Stream.h>
-#include <SoftwareSerial.h>
+#if SOFTSERIAL 
+	#include <SoftwareSerial.h>
+#endif
 #if ATLSOFTSERIAL 
 	#include "AltSoftSerial.h"
 #endif
 
 #define EVENT_NULL	0
 #define EVENT_RING	1
-#define EVENT_SMS	2
+#define EVENT_SMS		2
 #define UFS "UFS"
 #define RAM "RAM"
 #define COM "COM"
+
 class UC20 
 {
 public:
 	UC20();
+	#if SOFTSERIAL 
 	void begin(SoftwareSerial *serial,long baud);	
+	#endif
 	void begin(HardwareSerial *serial,long baud);
 	#if ATLSOFTSERIAL 
 	void begin(AltSoftSerial *serial,long baud);
 	#endif
 	void (*Event_debug)(String data);
 	void debug (String data);
-	void SetPowerKeyPin(int pin);
-	bool PowerOn();
-	bool PowerOff();
-	bool WaitReady();
-	String GetOperator();
-	unsigned char SignalQuality();
+	void setPowerKeyPin(int pin);
+	bool powerOn();
+	bool powerOff();
+	bool setAutoReset(uint8_t mode, uint16_t delay);
+	uint16_t getAutoReset();
+	bool waitSIMReady();
+	String getSIMStatus();
+	bool waitOK();
+	bool waitReady();
+	bool setEchoMode(bool echo);
+	String moduleInfo();
+	bool waitNetworkRegistered();
+	unsigned char getNetworkStatus();
+	String getOperator();
+	unsigned char signalQuality();
+	bool resetDefaults();
 	bool wait_ok_(long time,bool db);
 	bool wait_ok(long time);
 	bool wait_ok_ndb(long time);
-	unsigned char event_input();
-	unsigned char event_type;
+	unsigned char eventInput();
+	unsigned char eventType;
 	
 	
-	unsigned char index_new_SMS;
+	unsigned char indexNewSMS;
 	void start_time_out();
 	bool time_out(long timeout_interval);
 	
@@ -58,7 +79,6 @@ public:
 	size_t print(String data,int type);
 	size_t println (String data,int type);
 	String readStringUntil(char data);
-	void  my_flush();
 protected:
 	 Stream *_Serial;
 };

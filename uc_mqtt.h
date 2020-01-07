@@ -1,6 +1,6 @@
 #ifndef uc_mqtt_h
 #define uc_mqtt_h
-#include "TEE_UC20.h"
+#include "NSB_UC20.h"
 
 #define MQTT_MAX_PACKET_SIZE 128
 class UCxMQTT

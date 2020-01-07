@@ -12,9 +12,9 @@ bool FIREBASE :: begin(String host,String auth)
 	
 	host_ = host;
 	auth_ = auth; 
-	gsm.my_flush();
-	gsm.my_flush();
-	gsm.my_flush();
+//	gsm.my_flush();
+//	gsm.my_flush();
+//	gsm.my_flush();
 	
 	ret = fb_ssl.sslversion(CONTEX,1);
 	if(ret==1)
