@@ -16,13 +16,13 @@ bool FIREBASE :: begin(String host,String auth)
 //	gsm.my_flush();
 //	gsm.my_flush();
 	
-	ret = fb_ssl.sslversion(CONTEX,1);
+	ret = fb_ssl.setSSLversion(CONTEX,1);
 	if(ret==1)
 	{
-		ret = fb_ssl.ciphersuite(CONTEX,"0xFFFF");
+		ret = fb_ssl.setCiphersuite(CONTEX,"0xFFFF");
 		if(ret==1)
 		{
-			ret = fb_ssl.seclevel(CONTEX,0);
+			ret = fb_ssl.setSeclevel(CONTEX,0);
 			if(ret==1)
 			{
 				return(true);

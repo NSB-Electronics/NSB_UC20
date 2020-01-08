@@ -2,11 +2,13 @@
 //#include "SoftwareSerial.h"
 //#include <AltSoftSerial.h>
 #include "internet.h"
-#include "uc_mqtt.h"
+#include "uc_mqtts.h"
+#include "ssl.h"
 
 UC20 gsm;
 INTERNET net;
-UCxMQTT mqtt;
+UCxMQTTS mqtt;
+SSL ssl;
 
 #define FORCE_REBOOT  1
 
@@ -44,6 +46,8 @@ void debugGSM(String data) {
 void setup() {
   Serial.begin(9600);
   delay(3000);
+
+  randomSeed(analogRead(0));
   
   gsm.begin(&Serial1, 115200);
   
@@ -98,7 +102,7 @@ void setup() {
     Serial.println(gsm.getNetworkStatus());
   }
   
-  Serial.print(F("I:\tDisconnect Internet: "));
+  Serial.print(F("I:\tDeactivate PDP: "));
   Serial.println(net.DisConnect());
   
   Serial.print(F("I:\tSet APN and Password: "));
@@ -110,9 +114,19 @@ void setup() {
   Serial.print(F("I:\tIP: "));
   Serial.println(net.GetIP());
 
+  // Enable SSL
+  Serial.print(F("I:\tSet SSL Version: "));
+  Serial.println(ssl.setSSLversion(1, 1));
+  Serial.print(F("I:\tSet SSL Cipher: "));
+  Serial.println(ssl.setCiphersuite(1, "0xFFFF"));
+  Serial.print(F("I:\tSet SSL seclevel: "));
+  Serial.println(ssl.setSeclevel(1, 0));
+  Serial.print(F("I:\tSet SLL Certificate: "));
+  Serial.println(ssl.setCertificate(1));
+  
 
   feedName.concat(MQTT_USER);
-  feedName.concat("/feeds/testmqtt");
+  feedName.concat("/feeds/testmqttssl");
 
   mqtt.callback = callback;
   
@@ -138,19 +152,20 @@ void callback(String topic, char *payload, unsigned char payloadLength) {
 void connectToServer() {
   do {
     Serial.print(F("I:\tConnecting to MQTT Server: "));
-    if (mqtt.DisconnectMQTTServer()) {
-      mqtt.ConnectMQTTServer(MQTT_SERVER, MQTT_PORT);
+    if (mqtt.disconnectMQTTServer()) {
+      mqtt.connectMQTTServer(MQTT_SERVER, MQTT_PORT);
     }
     delay(500);
-    Serial.println(mqtt.ConnectState());
-  } while(!mqtt.ConnectState());
+    Serial.println(mqtt.connectState());
+  } while(!mqtt.connectState());
   Serial.println(F("I:\tMQTT Server Connected"));
-  unsigned char ret = mqtt.Connect(MQTT_ID, MQTT_USER, MQTT_PASSWORD);
-  Serial.print(F("I:\tMQTT Server Login: "));
-  Serial.println(mqtt.ConnectReturnCode(ret));
   
-  mqtt.Subscribe(feedName);
-  mqtt.Subscribe("time/seconds"); // Adafruit IO specific
+  unsigned char ret = mqtt.connectMQTTUser(MQTT_ID, MQTT_USER, MQTT_PASSWORD);
+  Serial.print(F("I:\tMQTT Server Login: "));
+  Serial.println(mqtt.connectCodeString(ret));
+  
+  mqtt.subscribe(feedName);
+  mqtt.subscribe("time/seconds"); // Adafruit IO specific
  
 } // connectToServer
 
@@ -162,12 +177,12 @@ void loop() {
   if (millis() - previousmqtt >= intervalmqtt) {
     previousmqtt = millis();
     feedPayload = String(float(random(46000, 56000))*0.001);
-    mqtt.Publish(feedName, feedPayload);
+    mqtt.publish(feedName, feedPayload);
   }
   
-  mqtt.MqttLoop();
+  mqtt.mqttLoop();
   
-  if (!mqtt.ConnectState()) {
+  if (!mqtt.connectState()) {
      connectToServer();
   }
 } // loop
