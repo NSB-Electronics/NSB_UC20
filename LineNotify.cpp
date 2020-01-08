@@ -11,13 +11,13 @@ bool LINE_NOTIFY :: begin(String auth)
 {
 	int ret=0;
 	Authen = auth;
-	ret = line_ssl.sslversion(CONTEX,1);
+	ret = line_ssl.setSSLversion(CONTEX,1);
 	if(ret==1)
 	{
-		ret = line_ssl.ciphersuite(CONTEX,"0xFFFF");
+		ret = line_ssl.setCiphersuite(CONTEX,"0xFFFF");
 		if(ret==1)
 		{
-			ret = line_ssl.seclevel(CONTEX,0);
+			ret = line_ssl.setSeclevel(CONTEX,0);
 			if(ret==1)
 			{
 				return(true);
