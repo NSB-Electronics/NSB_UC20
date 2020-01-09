@@ -166,7 +166,9 @@ void connectToServer() {
   
   mqtt.subscribe(feedName);
   mqtt.subscribe("time/seconds"); // Adafruit IO specific
- 
+
+  //Serial.println(mqtt.disconnectMQTTUser());
+  //mqtt.unsubscribe("time/seconds");
 } // connectToServer
 
 //  ---------------------------------------------------------------------------
@@ -179,9 +181,12 @@ void loop() {
     feedPayload = String(float(random(46000, 56000))*0.001);
     mqtt.publish(feedName, feedPayload);
   }
-  
+  unsigned long tick = millis();
   mqtt.mqttLoop();
-  
+  if (millis() - tick > 150) {
+    Serial.print("Tick: ");
+    Serial.println(millis() - tick);
+  }
   if (!mqtt.connectState()) {
      connectToServer();
   }

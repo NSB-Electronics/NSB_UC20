@@ -33,7 +33,7 @@ public:
 	void print(int data);
 	void println(int data);
 	
-	unsigned char ReceiveConnectID;
+	unsigned char receiveClientID;
 };
 
 #endif

@@ -358,7 +358,7 @@ bool SSL::receiveAvailable() {
 		String req = gsm.readStringUntil('\n');
 		if (req.indexOf(F("+QSSLURC: \"recv\"")) != -1) {
 			unsigned char index = req.indexOf(F(","));
-			ReceiveConnectID = req.substring(index+1).toInt();
+			receiveClientID = req.substring(index+1).toInt();
 			return (true);
 		}
 		else {
@@ -374,7 +374,7 @@ int SSL::readBuffer() {
 int SSL::readBuffer(unsigned char contextid, int max_len) {
 	const long interval = 3000; 
 	unsigned long previousMillis = millis(); 
-	unsigned long currentMillis ; 
+	unsigned long currentMillis; 
 	unsigned char flag = 0;  
 		
 //	gsm.print(F("AT+QIRD="));
@@ -407,12 +407,13 @@ int SSL::readBuffer(unsigned char contextid, int max_len) {
 		if (currentMillis - previousMillis >= interval) {
 			if (flag++==3)
 				return (0);
-			Serial.print("ReadBuffer timeout: ");
-			Serial.println(flag);
-			gsm.print(F("AT+QSSLRECV="));
-			gsm.print(String(contextid));
-			gsm.print(",");
-			gsm.println(String(max_len));
+			gsm.debug(F("ReadBuffer timeout: "));
+			gsm.debug(String(flag));
+			gsm.debug(F("\r\n"));
+			//Serial.print("ReadBuffer timeout: ");
+			//Serial.println(flag);
+			gsm.debug(str);
+			gsm.println(str);
 			previousMillis = millis(); 
 		}
 	}

@@ -225,7 +225,7 @@ String UCxMQTT:: ConnectReturnCode(unsigned char input)
 			return(F("TimeOut"));
 		break;
 		default:
-			return(F("Unknow!!!"));
+			return(F("Unknown!!!"));
 		break;
 	}
 }
@@ -373,16 +373,14 @@ void UCxMQTT::MqttLoop()
 	/*if(gsm.available())
 	{
 			String req = gsm.readStringUntil('\r');
-			Serial.println(req);
+			//Serial.println(req);
 			if(req.indexOf(F("+QIURC: \"closed\""))!= -1)
 			{
 				connected = false;
 				clear_buffer(); 
 				return;
 			}
-
-	}			
-		*/		
+	 */	
 				unsigned int buf_cnt=0;
 				while(1)
 				{
@@ -397,13 +395,13 @@ void UCxMQTT::MqttLoop()
 					switch (buffer[0])
 					{
 						case 0x30: // rx_sub
-						//Serial.print("\r\nrx sub");
+						  //Serial.print("\r\nrx sub");
 							check_rx_sub();
 							return;
 						break;
 						
 						case 0x32: // rx_sub + retain
-						//Serial.print("\r\nrx sub");
+						  //Serial.print("\r\nrx sub");
 							check_rx_sub();
 							return;
 						break;
@@ -421,7 +419,7 @@ void UCxMQTT::MqttLoop()
 							{
 								ping_flag = false;
 								connected = false;
-								Serial.println("ping fail");
+								//Serial.println("ping fail");
 								clear_buffer();
 								return;	
 							}
@@ -436,7 +434,7 @@ void UCxMQTT::MqttLoop()
 					if(connected==0)
 						return;
 				}			
-	
+	//}
 }
 
 void UCxMQTT::check_rx_sub()
