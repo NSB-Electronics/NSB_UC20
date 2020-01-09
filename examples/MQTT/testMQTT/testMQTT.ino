@@ -16,11 +16,11 @@ UCxMQTT mqtt;
 #define USER ""
 #define PASS ""
 
-#define MQTT_SERVER      ""
-#define MQTT_PORT        ""
-#define MQTT_ID          ""   // Used to identify the connection
-#define MQTT_USER        ""
-#define MQTT_PASSWORD    ""
+#define MQTT_SERVER      "io.adafruit.com"
+#define MQTT_PORT        "1883"
+#define MQTT_ID          "MQTT_TEST"   // Used to identify the connection
+#define MQTT_USER        "YOUR_USERNAME"
+#define MQTT_PASSWORD    "YOUR_PASSWORD/KEY"
 
 unsigned long previousmqtt = 0;
 const long intervalmqtt = 60000;
