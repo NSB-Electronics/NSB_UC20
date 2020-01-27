@@ -7,25 +7,34 @@ void func_null_mqtts(String topic,char *playload, unsigned char length){}
 UCxMQTTS::UCxMQTTS() {
 	//void (*callback)(String topic ,char *playload,unsigned char length);
 	callback = func_null_mqtts;
-	
 }
 
-bool UCxMQTTS::connectMQTTServer(String web, String port) {
-	//connected = ssl_mqtts.Open(1,1,0,web,port,1); //direct mode
-	connected = ssl_mqtts.open(1, 1, 0, web, port, 0); //buffer mode	
+bool UCxMQTTS::connectMQTTServer(unsigned char pdpid, unsigned char contextid, unsigned char clientid, String web, String port, unsigned char mode) {
+	connected = ssl_mqtts.open(pdpid, contextid, clientid, web, port, mode); //buffer mode	
 	return (connected);
 }
 
-bool UCxMQTTS::disconnectMQTTServer() {
+bool UCxMQTTS::connectMQTTServer(unsigned char contextid, String web, String port) {
+	connected = connectMQTTServer(1, contextid, 0, web, port, 0);
+	return (connected);
+}
+
+bool UCxMQTTS::connectMQTTServer(String web, String port) {
+	connected = connectMQTTServer(1, 1, 0, web, port, 0);
+	return (connected);
+}
+
+bool UCxMQTTS::disconnectMQTTServer(unsigned char contextid) {
 	connected = false;
-	return (ssl_mqtts.close(1));
+	return (ssl_mqtts.close(contextid));
+}
+
+bool UCxMQTTS::disconnectMQTTServer() {
+	return (disconnectMQTTServer(1));
 }
 
 // The current MQTT spec is 3.1.1 and available here:
 //   http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718028
-// However this connect packet and code follows the MQTT 3.1 spec here (some
-// small differences in the protocol):
-//   http://public.dhe.ibm.com/software/dw/webservices/ws-mqtt/mqtt-v3r1.html#connect
 unsigned char UCxMQTTS::connectMQTTUser(String id, String user, String pass) {
 	
 	// Leave room in the buffer for header and variable length field

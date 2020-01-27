@@ -67,7 +67,10 @@ class UCxMQTTS
 	
 	public:
 	UCxMQTTS();
+	bool connectMQTTServer(unsigned char pdpid, unsigned char contextid, unsigned char clientid, String web, String port, unsigned char mode);
+	bool connectMQTTServer(unsigned char contextid, String web, String port);
 	bool connectMQTTServer(String web, String port);
+	bool disconnectMQTTServer(unsigned char contextid);
 	bool disconnectMQTTServer();
 	bool connectState();
 	unsigned char connectMQTTUser(String id, String user, String pass);
