@@ -17,9 +17,9 @@ bool SSL::setSSLversion(unsigned char contextid, unsigned char sslver) {
 	return (gsm.wait_ok_ndb(3000));
 }
 
-bool SSL::setCiphersuite(unsigned char contextid, String cipher) {
+bool SSL::setCiphersuite(unsigned char contextid, String tls_rsa) {
 	gsm.print(F("AT+QSSLCFG=\"ciphersuite\","));
-	gsm.println(String(contextid)+","+cipher);
+	gsm.println(String(contextid)+","+tls_rsa);
 	return (gsm.wait_ok_ndb(3000));
 }
 
@@ -29,22 +29,10 @@ bool SSL:: setSeclevel(unsigned char contextid, unsigned char level) {
 	return (gsm.wait_ok_ndb(3000));
 }
 
-bool SSL::setCertificate(unsigned char contextid, String cacertpath) {
+bool SSL::setCertificate(unsigned char contextid) {
 	gsm.print(F("AT+QSSLCFG=\"cacert\","));
 	gsm.print(String(contextid));
-	gsm.print(F(",\""));
-	gsm.print(cacertpath);
-	gsm.println("\"");
-	return (gsm.wait_ok_ndb(3000));
-}
-
-bool SSL::setCertificate(unsigned char contextid) {
-	return setCertificate(contextid, "UFS:cacert.pem");
-}
-
-bool SSL::setIgnorelocaltime(unsigned char contextid, bool ignoretime) {
-	gsm.print(F("AT+QSSLCFG=\"ignorelocaltime\","));
-	gsm.println(String(contextid)+","+String(ignoretime));
+	gsm.println(F(",\"UFS:cacert.pem\""));
 	return (gsm.wait_ok_ndb(3000));
 }
 
