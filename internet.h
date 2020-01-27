@@ -8,10 +8,18 @@ class INTERNET
 {
 public:
 	INTERNET();
-	bool Configure(String apn,String user,String password);
-	bool Connect();
-	bool DisConnect();
-	String GetIP();
+	bool configure(unsigned char contextid, unsigned char context_type, String apn, String user, String password, unsigned char auth);
+	bool configure(unsigned char contextid, String apn, String user, String password);
+	bool configure(String apn, String user, String password);
+	bool configDNS(unsigned char contextid, String pridnsaddr, String secdnsaddr);
+	bool configDNS(String pridnsaddr, String secdnsaddr);
+	bool configDNS(unsigned char contextid);
+	bool configDNS();
+	bool connect(unsigned char contextid);
+	bool connect();
+	bool disconnect(unsigned char contextid);
+	bool disconnect();
+	String getIP();
 
 };
 
