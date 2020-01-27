@@ -37,7 +37,7 @@ public:
 	void begin(AltSoftSerial *serial,long baud);
 	#endif
 	void (*Event_debug)(String data);
-	void debug (String data);
+	void debug(String data);
 	void setPowerKeyPin(int pin);
 	bool powerOn();
 	bool powerOff();
@@ -53,6 +53,8 @@ public:
 	unsigned char getNetworkStatus();
 	String getOperator();
 	unsigned char signalQuality();
+	int signalQualitydBm(unsigned char rssi);
+	unsigned char signalQualityPercentage(unsigned char rssi);
 	bool resetDefaults();
 	bool wait_ok_(long time,bool db);
 	bool wait_ok(long time);

@@ -8,13 +8,12 @@ int START_PIN = 4;
 
 unsigned long previousMillis_timeout = 0; 
 
-
 void event_null(String data){}
 
 UC20::UC20() {
 	Event_debug = event_null;
 }
-void UC20:: begin(HardwareSerial *serial, long baud) {
+void UC20::begin(HardwareSerial *serial, long baud) {
 	serial->begin(baud);
 	_Serial = serial;
 }
@@ -27,13 +26,13 @@ void UC20:: begin(SoftwareSerial *serial, long baud) {
 #endif
 
 #if ATLSOFTSERIAL
-void UC20:: begin(AltSoftSerial *serial, long baud) {
+void UC20::begin(AltSoftSerial *serial, long baud) {
 	serial->begin(baud);
 	_Serial = serial;
 }
 #endif
 
-void UC20:: debug(String data) {
+void UC20::debug(String data) {
 	(*Event_debug)(data);
 }
 
@@ -240,7 +239,7 @@ bool UC20::setEchoMode(bool echo) {
 }
 
 String UC20::moduleInfo() {
-  _Serial->println(F("ATI"));
+	_Serial->println(F("ATI"));
 	delay(300);
 	while (_Serial->available())	{
 		String req = _Serial->readStringUntil('\n');
@@ -248,7 +247,9 @@ String UC20::moduleInfo() {
 		if (req.indexOf(F("Revision")) != -1) {
 			return req.substring(req.indexOf(F(" "))+1);
 		}
-		
+		//if (wait_ok(1000)) {
+		//	return F("");
+		//}
 	}
 	return F("");
 }
@@ -338,6 +339,35 @@ unsigned char UC20::signalQuality() {
 		
 	}
 	return ret;
+}
+
+int UC20::signalQualitydBm(unsigned char rssi) {
+	
+	// 0 -113 dBm or less
+	// 1 -111 dBm
+	// 2...30 -109... -53 dBm
+	// 31 -51 dBm or greater
+	// 99 Not known or not detectable
+	
+	// y = mx +c
+	int m = 2;
+	int c = -113;
+	
+	if (rssi == 0) return -113;
+	if (rssi == 1) return -111;
+	if (rssi == 99) return -255;
+	
+	if ((rssi >= 2) && (rssi <= 30)) return (rssi*m + c);
+	if (rssi >= 31) return -51;
+	
+}
+
+unsigned char UC20::signalQualityPercentage(unsigned char rssi) {
+	if (rssi == 0) return 0;
+	if (rssi == 99) return 0;
+	
+	if ((rssi >= 1) && (rssi <= 31)) return (((float(rssi)*100)/31) + 0.5); // Round nearest integer
+	if (rssi > 31) return 100;
 }
 
 bool UC20::resetDefaults() {
