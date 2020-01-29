@@ -42,9 +42,12 @@ bool HTTP::url(String url) {
 	return (gsm.wait_ok(10000));
 	
 }
-int HTTP::get() {
+int HTTP::get(unsigned int rspTime) {
 	String req;
-	gsm.println("AT+QHTTPGET=80");
+	String str = "AT+QHTTPGET=";
+			str += String(rspTime);
+	
+	gsm.println(str);
 	while (!gsm.available()) {
 		
 	}
@@ -61,6 +64,10 @@ int HTTP::get() {
 			return (-1);
 		}		
 	}		
+}
+
+int HTTP::get() {
+	return get(80);
 }
 
 int HTTP::post() {
@@ -105,7 +112,7 @@ int HTTP::post(String data) {
 	
 }
 
-String HTTP::read(unsigned char waitTime) {
+String HTTP::read(unsigned int waitTime) {
 	String req;
 	String returnStr;
 	String str = "AT+QHTTPREAD=";
@@ -122,9 +129,13 @@ String HTTP::read(unsigned char waitTime) {
 			return (returnStr);
 		} else {
 			if ((req.indexOf(F("OK")) == -1) && (req.indexOf(F("CONNECT")) == -1)) {
+				// Ignores OK and CONNECT to only return the HTTP response information
 				returnStr += req;
 				returnStr += "\r\n";
 			}
+		}
+		if (req.indexOf(F("+CME ERROR:")) != -1) {
+			return (req);
 		}
 	}	
 }
