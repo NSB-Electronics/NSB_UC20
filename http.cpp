@@ -152,8 +152,12 @@ String HTTP::read(unsigned int waitTime) {
 		if (req.indexOf(F("+QHTTPREAD: 0")) != -1) {
 			return (returnStr);
 		} else {
-			if ((req.indexOf(F("OK")) == -1) && (req.indexOf(F("CONNECT")) == -1)) {
-				// Ignores OK and CONNECT to only return the HTTP response information
+			if ((req.indexOf(F("OK")) > 0)) {
+				// If the OK is in the response it must still return it as it is part of the message
+				returnStr += req;
+				returnStr += "\r\n";
+			} else if ((req.indexOf(F("OK")) == -1) && (req.indexOf(F("CONNECT")) == -1)) {
+				// Ignores modem OK and CONNECT to only return the HTTP response information
 				returnStr += req;
 				returnStr += "\r\n";
 			}
