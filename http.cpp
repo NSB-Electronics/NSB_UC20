@@ -43,6 +43,7 @@ bool HTTP::url(String url) {
 	
 }
 int HTTP::get(unsigned int rspTime) {
+	bool timedOut = false;
 	String req;
 	String str = "AT+QHTTPGET=";
 			str += String(rspTime);
@@ -53,7 +54,7 @@ int HTTP::get(unsigned int rspTime) {
 	}
 	gsm.start_time_out();
 	
-	while (1) {
+	while (!timedOut) {
 		req = gsm.readStringUntil('\n');	
 	    if (req.indexOf(F("+QHTTPGET:")) != -1) {
 			char index1 = req.indexOf(F(","));
@@ -62,24 +63,31 @@ int HTTP::get(unsigned int rspTime) {
 		}
 		if (req.indexOf(F("ERROR")) != -1) {
 			return (-1);
-		}		
-	}		
+		}
+		if (gsm.time_out((rspTime * 1000) + 5000)) {
+			timedOut = true;
+			gsm.debug(F("\r\nHTTP GET timeout"));
+		}
+	}
+
+	return -1;	
 }
 
 int HTTP::get() {
 	return get(80);
 }
 
-int HTTP::post() {
-	return (post(" "));
-}
-
-int HTTP::post(String data) {
-	String req;
-	gsm.print("AT+QHTTPPOST=");
-	gsm.print(data.length(), DEC);
-	gsm.println(",80,80");
-	return (data.length(), DEC);
+int HTTP::post(String data, unsigned int inputTime, unsigned int rspTime) {
+	bool timedOut = false;
+	String req;	
+	String str = "AT+QHTTPPOST=";
+			str += (data.length(), DEC);
+			str += ",";
+			str += String(inputTime);
+			str += ",";
+			str += String(rspTime);
+	gsm.println(str);
+	
 	while (!gsm.available()) {
 		
 	}
@@ -99,7 +107,7 @@ int HTTP::post(String data) {
 		
 	}
 	gsm.start_time_out();
-	while (1) {
+	while (!timedOut) {
 		req = gsm.readStringUntil('\n');	
 	    if (req.indexOf(F("+QHTTPPOST")) != -1) {
 			char index1 = req.indexOf(F(","));
@@ -107,12 +115,28 @@ int HTTP::post(String data) {
 		}
 		if (req.indexOf(F("ERROR")) != -1) {
 			return (-1);
-		}		
+		}
+		if (gsm.time_out((rspTime * 1000) + 5000)) {
+			timedOut = true;
+			gsm.debug(F("\r\nHTTP POST timeout"));
+		}
 	}		
 	
+	return -1;
 }
 
+int HTTP::post(String data) {
+	return (post(data, 80, 80));
+}
+
+
+int HTTP::post() {
+	return (post("", 80, 80));
+}
+
+
 String HTTP::read(unsigned int waitTime) {
+	bool timedOut = false;
 	String req;
 	String returnStr;
 	String str = "AT+QHTTPREAD=";
@@ -121,7 +145,7 @@ String HTTP::read(unsigned int waitTime) {
 	gsm.println(str);
 	gsm.start_time_out();
 	
-	while (1) {
+	while (!timedOut) {
 		req = gsm.readStringUntil('\r\n');	
 	    //Serial.println(req);
 		
@@ -134,10 +158,16 @@ String HTTP::read(unsigned int waitTime) {
 				returnStr += "\r\n";
 			}
 		}
-		if (req.indexOf(F("+CME ERROR:")) != -1) {
+		if (req.indexOf(F("ERROR")) != -1) {
 			return (req);
 		}
-	}	
+		
+		if (gsm.time_out((waitTime * 1000) + 5000)) {
+			timedOut = true;
+			gsm.debug(F("\r\nHTTP READ timeout"));
+		}
+	}
+	return ("HTTP READ timeout");
 }
 
 

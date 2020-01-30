@@ -10,6 +10,7 @@ public:
 	bool begin(unsigned char contextID);
 	int  get(unsigned int rspTime);
 	int  get();
+	int  post(String data, unsigned int inputTime, unsigned int rspTime);
 	int  post(String data);
 	int  post();
 	String read(unsigned int waitTime);
