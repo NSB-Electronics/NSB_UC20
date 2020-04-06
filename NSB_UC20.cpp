@@ -419,9 +419,10 @@ String UC20::getNetworkTimeString() {
 	return(F(""));
 }
 
+static const uint8_t monthDays[]={31,28,31,30,31,30,31,31,30,31,30,31}; // API starts months from 1, this array starts from 0
+
 time_t UC20::getNetworkTimeNumber() {
 	// Excludes timezone, get it using getNetworkTimezone
-	time_t tmpTime = 0;
 	String strTime = getNetworkTimeString();
 	
 	int idxSlash1 = strTime.indexOf(F("/"));
@@ -444,17 +445,36 @@ time_t UC20::getNetworkTimeNumber() {
 	String strTimezone = strTime.substring(idxPlus+1, idxComma2);
 	int offset = strTimezone.toInt() * 0.25;
 	
-	tmElements_t tm;
-	tm.Year = strYear.toInt() + 2000 - 1970; // String does not include century
-	tm.Month = strMonth.toInt();
-	tm.Day = strDay.toInt();
-	tm.Hour = strHour.toInt();
-	tm.Minute = strMinute.toInt();
-	tm.Second = strSecond.toInt();
+	int year = strYear.toInt() + 2000 - 1970; // String does not include century
+	int month = strMonth.toInt();
+	int day = strDay.toInt();
+	int hour = strHour.toInt();
+	int minute = strMinute.toInt();
+	int second = strSecond.toInt();
 	
-	tmpTime = makeTime(tm);
+	uint32_t seconds = 0;
 	
-	return tmpTime;
+	seconds = year*(SECS_PER_DAY * 365);
+	for (int i = 0; i < year; i++) {
+		if (LEAP_YEAR(i)) {
+			seconds += SECS_PER_DAY;   // add extra days for leap years
+		}
+	}
+	  
+	// add days for this year, months start from 1
+	for (int i = 1; i < month; i++) {
+		if ( (i == 2) && LEAP_YEAR(year)) { 
+			seconds += SECS_PER_DAY * 29;
+		} else {
+			seconds += SECS_PER_DAY * monthDays[i-1];  //monthDay array starts from 0
+		}
+	}
+	seconds+= (day-1) * SECS_PER_DAY;
+	seconds+= hour * SECS_PER_HOUR;
+	seconds+= minute * SECS_PER_MIN;
+	seconds+= second;
+	
+	return (time_t)seconds;
 }
 
 int UC20::getNetworkTimezone() {
