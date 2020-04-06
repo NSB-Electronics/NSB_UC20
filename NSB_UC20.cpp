@@ -52,10 +52,6 @@ bool UC20::powerOn() {
 	digitalWrite(START_PIN, LOW);
 	delay(1000);
 				
-	
-	
-	
-	
 	/*
 	while(!_Serial->available())
 	{
@@ -131,7 +127,16 @@ bool UC20::powerOff() {
 }
 
 bool UC20::setAutoReset(uint8_t mode, uint16_t delay) {
-	_Serial->println(F("AT+QRST=1,0"));
+	_Serial->print(F("AT+QRST="));
+	_Serial->print(mode, DEC);
+	_Serial->print(F(","));
+	_Serial->print(delay, DEC);
+	_Serial->println(F(""));
+	return wait_ok(1000);
+}
+
+bool UC20::setAutoReset() {
+	return setAutoReset(RESET_ONETIME, 0); // Will reset modem once
 }
 
 uint16_t UC20::getAutoReset() {
@@ -145,13 +150,13 @@ bool UC20::waitSIMReady() {
 		String req = getSIMStatus();
 		debug(req);
 		if (req.indexOf(F("READY")) != -1) {
-			debug(F("\r\PIN Ready..."));
+			debug(F("\r\nPIN Ready..."));
 			return true;
 		} else if (req.indexOf(F("SIM PIN")) != -1) {
-			debug(F("\r\PIN required..."));
+			debug(F("\r\nPIN required..."));
 			return false;
 		} else if (req.indexOf(F("SIM PUK")) != -1) {
-			debug(F("\r\PUK required..."));
+			debug(F("\r\nPUK required..."));
 			return false;
 		}	else {
 			// Wait
@@ -188,6 +193,24 @@ String UC20::getSIMStatus() {
 			timedOut = true;
 		}
 	}
+	return F("");
+}
+
+String UC20::getIMEI() {
+	_Serial->println(F("AT+GSN"));
+	delay(300);
+	while (1) {
+		if (_Serial->available()) {
+			String req = _Serial->readStringUntil('\n');
+			if (req.length() > 3) {
+				wait_ok_ndb(1000); // Flush OK
+				return req.substring(0, req.indexOf(F("\r")));
+			} else {
+				// Ignore empty lines and OKs
+			}
+		}
+	}
+	
 	return F("");
 }
 
@@ -231,10 +254,10 @@ bool UC20::waitReady() {
 bool UC20::setEchoMode(bool echo) {
 	if (echo) {
 		_Serial->println(F("ATE1"));
-		wait_ok(300);
+		return wait_ok(300);
 	} else {
 		_Serial->println(F("ATE0"));
-		wait_ok(300);
+		return wait_ok(300);
 	}
 }
 
@@ -245,7 +268,7 @@ String UC20::moduleInfo() {
 		String req = _Serial->readStringUntil('\n');
 		debug(req);
 		if (req.indexOf(F("Revision")) != -1) {
-			return req.substring(req.indexOf(F(" "))+1);
+			return req.substring(req.indexOf(F(" "))+1, req.indexOf(F("\r")));
 		}
 		//if (wait_ok(1000)) {
 		//	return F("");
@@ -310,7 +333,7 @@ String UC20::getOperator() {
 			return(operate_name + "," + acc_tech);
 			*/
 			wait_ok(1000);
-			return (req.substring(req.indexOf(F("\""))));
+			return (req.substring(req.indexOf(F("\"")), req.indexOf(F("\r"))));
 		}
 		if (time_out(180000)) {
 			return(F(""));
@@ -360,6 +383,8 @@ int UC20::signalQualitydBm(unsigned char rssi) {
 	if ((rssi >= 2) && (rssi <= 30)) return (rssi*m + c);
 	if (rssi >= 31) return -51;
 	
+	return 0;
+	
 }
 
 unsigned char UC20::signalQualityPercentage(unsigned char rssi) {
@@ -368,11 +393,88 @@ unsigned char UC20::signalQualityPercentage(unsigned char rssi) {
 	
 	if ((rssi >= 1) && (rssi <= 31)) return (((float(rssi)*100)/31) + 0.5); // Round nearest integer
 	if (rssi > 31) return 100;
+	
+	return 0;
 }
 
 bool UC20::resetDefaults() {
 	_Serial->println(F("AT&F"));
-	wait_ok(1000);
+	return wait_ok(1000);
+}
+
+String UC20::getNetworkTimeString() {
+	_Serial->println(F("AT+QLTS"));
+	start_time_out();
+	while (1) {
+		String req = _Serial->readStringUntil('\n');	 
+		if (req.indexOf(F("+QLTS")) != -1) {
+			wait_ok(1000);
+			return (req.substring(req.indexOf(F("\""))+1, req.lastIndexOf(F("\""))));
+		}
+		if (time_out(5000)) {
+			return(F(""));
+		}
+		
+	}
+	return(F(""));
+}
+
+time_t UC20::getNetworkTimeNumber() {
+	// Excludes timezone, get it using getNetworkTimezone
+	time_t tmpTime = 0;
+	String strTime = getNetworkTimeString();
+	
+	int idxSlash1 = strTime.indexOf(F("/"));
+	int idxSlash2 = strTime.indexOf(F("/"), idxSlash1+1);
+	int idxComma1 = strTime.indexOf(F(","));
+	int idxComma2 = strTime.indexOf(F(","), idxComma1+1);
+	int idxColon1 = strTime.indexOf(F(":"));
+	int idxColon2 = strTime.indexOf(F(":"), idxColon1+1);
+	int idxPlus = strTime.indexOf(F("+"));
+	
+	String strYear = strTime.substring(0, idxSlash1);
+	String strMonth = strTime.substring(idxSlash1+1, idxSlash2);
+	String strDay = strTime.substring(idxSlash2+1, idxComma1);
+	
+	String strHour = strTime.substring(idxComma1+1, idxColon1);
+	String strMinute = strTime.substring(idxColon1+1, idxColon2);
+	String strSecond = strTime.substring(idxColon2+1, idxPlus);
+	
+	// Not used here, see getNetworkTimezone
+	String strTimezone = strTime.substring(idxPlus+1, idxComma2);
+	int offset = strTimezone.toInt() * 0.25;
+	
+	tmElements_t tm;
+	tm.Year = strYear.toInt() + 2000 - 1970; // String does not include century
+	tm.Month = strMonth.toInt();
+	tm.Day = strDay.toInt();
+	tm.Hour = strHour.toInt();
+	tm.Minute = strMinute.toInt();
+	tm.Second = strSecond.toInt();
+	
+	tmpTime = makeTime(tm);
+	
+	return tmpTime;
+}
+
+int UC20::getNetworkTimezone() {
+	String strTimezone = "";
+	String strTime = getNetworkTimeString();
+	
+	int idxComma1 = strTime.indexOf(F(","));
+	int idxComma2 = strTime.indexOf(F(","), idxComma1+1);
+	int idxPlus = strTime.indexOf(F("+"));
+	int idxMinus = strTime.indexOf(F("-"));
+	
+	if (idxPlus != -1) {
+		strTimezone = strTime.substring(idxPlus+1, idxComma2);
+	} else {
+		strTimezone = strTime.substring(idxMinus+1, idxComma2);
+	}
+	
+	int offset = strTimezone.toInt() * 0.25;
+	
+	return offset;
 }
 
 void UC20::start_time_out() {
@@ -427,27 +529,56 @@ bool UC20::wait_ok_(long time, bool ack) {
 
 unsigned char UC20::eventInput() {
 	while (_Serial->available()) {
-		String req = _Serial->readStringUntil('\n');	
-	  if (req.indexOf(F("RING")) != -1) {
+		String req = _Serial->readStringUntil('\n');
+		req.replace("\r", "");
+		req.replace("\n", "");
+		//Serial.println(req);
+		if (req.indexOf(F("RING")) != -1) {
 			eventType = EVENT_RING;
-			return (EVENT_RING);//EVENT_RING
-		}	else if (req.indexOf(F("+CMTI: \"SM\"")) != -1) {
+			return (eventType);
+		} else if (req.indexOf(F("+CMTI: \"SM\"")) != -1) {
 			eventType = EVENT_SMS;
-			char index = req.indexOf(F(","));
-			indexNewSMS = req.substring(index+1).toInt();
-			return (EVENT_SMS);//EVENT_SMS
-		}	else if (req.indexOf(F("+CMTI: \"ME\"")) != -1) {
+			indexNewSMS = req.substring(req.indexOf(F(","))+1).toInt();
+			return (eventType);
+		} else if (req.indexOf(F("+CMTI: \"ME\"")) != -1) {
 			eventType = EVENT_SMS;
-			char index = req.indexOf(F(","));
-			indexNewSMS = req.substring(index+1).toInt();
-			return (EVENT_SMS);//EVENT_SMS
+			indexNewSMS = req.substring(req.indexOf(F(","))+1).toInt();
+			return (eventType);
+		} else if (req.indexOf(F("+QSMTPPUT")) != -1) {
+			char index1 = req.indexOf(F(":"));
+			char index2 = req.indexOf(F(","));
+			if (index2 == -1) index2 = sizeof(req);
+			emailErr = req.substring(index1+2, index2).toInt();
+			eventType = EVENT_EMAIL;
+			return (eventType);
+		} else if (req.indexOf(F("+QSSLURC")) != -1) {
+			eventType = EVENT_SSLURC;
+			Serial.println(req);
+			return (eventType);
+		} else if (req.indexOf(F("+CUSD")) != -1) {
+			eventType = EVENT_USD;
+			Serial.println(req);
+			return (eventType);
+		} else if (req.indexOf(F("OK")) == 0) {
+			eventType = EVENT_OK;
+			return (eventType);
+			// Flush
+		} else if (req.indexOf(F("ERROR")) != -1) {
+			eventType = EVENT_ERROR;
+			strError = req;
+			return (eventType);
 		} else {
-			debug(req);
-			//Serial.println(req);
+			if (req.length() > 0) {
+				debug(req);
+				Serial.print(F("Unknown event type: "));
+				Serial.println(req);
+			} else {
+				// read timeout
+			}
 		}
 	}
 	eventType = EVENT_NULL;
-	return (EVENT_NULL);//EVENT_NULL
+	return (eventType); // EVENT_NULL
 }
 
 

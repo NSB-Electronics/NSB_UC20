@@ -11,6 +11,8 @@
 
 #include <Arduino.h>
 #include <Stream.h>
+#include <Time.h>
+#include <TimeLib.h>
 #if SOFTSERIAL 
 	#include <SoftwareSerial.h>
 #endif
@@ -18,12 +20,28 @@
 	#include "AltSoftSerial.h"
 #endif
 
-#define EVENT_NULL	0
-#define EVENT_RING	1
-#define EVENT_SMS		2
-#define UFS "UFS"
-#define RAM "RAM"
-#define COM "COM"
+#define EVENT_NULL		0
+#define EVENT_OK		1
+#define EVENT_ERROR 	2
+#define EVENT_RING		3
+#define EVENT_SMS		4
+#define EVENT_EMAIL		5
+#define EVENT_SSLURC	6
+#define EVENT_USD		7
+
+
+#define UFS 	"UFS"
+#define RAM 	"RAM"
+#define COM 	"COM"
+
+#define RESET_DISABLE 	0
+#define RESET_ONETIME	1
+#define RESET_INTERVAL	2
+
+#define RESET_HOURLY	60
+#define RESET_DAILY		1440
+#define RESET_WEEKLY	10080
+#define RESET_MONTHLY	43200
 
 class UC20 
 {
@@ -42,9 +60,11 @@ public:
 	bool powerOn();
 	bool powerOff();
 	bool setAutoReset(uint8_t mode, uint16_t delay);
+	bool setAutoReset();
 	uint16_t getAutoReset();
 	bool waitSIMReady();
 	String getSIMStatus();
+	String getIMEI();
 	bool waitOK();
 	bool waitReady();
 	bool setEchoMode(bool echo);
@@ -56,6 +76,11 @@ public:
 	int signalQualitydBm(unsigned char rssi);
 	unsigned char signalQualityPercentage(unsigned char rssi);
 	bool resetDefaults();
+	
+	String getNetworkTimeString();
+	time_t getNetworkTimeNumber();
+	int getNetworkTimezone();
+	
 	bool wait_ok_(long time,bool db);
 	bool wait_ok(long time);
 	bool wait_ok_ndb(long time);
@@ -63,7 +88,9 @@ public:
 	unsigned char eventType;
 	
 	
-	unsigned char indexNewSMS;
+	unsigned char indexNewSMS = 0;
+	unsigned int emailErr = 0;
+	String strError = "";
 	void start_time_out();
 	bool time_out(long timeout_interval);
 	
