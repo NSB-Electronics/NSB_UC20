@@ -10,15 +10,15 @@ UC_FILE::UC_FILE() {
 bool available_ = true;
 
 void UC_FILE::begin() {
-	ListOutput = func_null;
-	DataOutput = func_null;
+	listOutput = func_null;
+	dataOutput = func_null;
 }
 
-long UC_FILE::GetSpace(String pattern) {
+long UC_FILE::getSpace(String pattern) {
 	return (space(pattern ,0));
 }
 
-long UC_FILE::GetFreeSpace(String pattern) {
+long UC_FILE::getFreeSpace(String pattern) {
 	return (space(pattern ,1));
 } 
 
@@ -55,7 +55,7 @@ long UC_FILE::space(String pattern, unsigned char mode) {//Mode 0 = All Space,1 
 	return (-1);
 }
 
-void UC_FILE::List(String pattern) {
+void UC_FILE::list(String pattern) {
 	//AT+QFLST="*"
 	//AT+QFLST="RAM:*"
 	if (pattern == UFS)
@@ -76,13 +76,13 @@ void UC_FILE::List(String pattern) {
 		if (req.indexOf(F("ERROR")) != -1) {
 			return;
 		}
-		(*ListOutput)(req);
+		(*listOutput)(req);
 	}
 	
 	
 }
 
-long UC_FILE::List(String pattern, String filename) {
+long UC_FILE::list(String pattern, String filename) {
 	char arr[20];
 	if (pattern == UFS) {
 		gsm.print(F("AT+QFLST=\""));
@@ -122,16 +122,16 @@ bool UC_FILE::available() {
 	return (available_);
 }
 
-String UC_FILE::ReadLine() {
+String UC_FILE::readLine() {
 	String req = gsm.readStringUntil('\n');
 	if (req.indexOf(F("OK")) != -1) {
 		available_ = false;
 	}
-	(*ListOutput)(req);
+	(*listOutput)(req);
 	return (req);	
 }
 
-bool UC_FILE::Delete(String pattern, String filename) {
+bool UC_FILE::deleteFile(String pattern, String filename) {
 	gsm.print(F("AT+QFDEL=\""));
 	if (pattern == UFS) {
 		gsm.print(filename);
@@ -145,7 +145,7 @@ bool UC_FILE::Delete(String pattern, String filename) {
 	gsm.wait_ok(5000);
 }
 
-int UC_FILE::Open(String pattern, String filename) {
+int UC_FILE::open(String pattern, String filename) {
 	gsm.print(F("AT+QFOPEN=\""));
 	if (pattern == UFS) {
 		gsm.print(filename);
@@ -180,21 +180,21 @@ int UC_FILE::Open(String pattern, String filename) {
 
 }
 
-bool UC_FILE::Close(int handle) {
+bool UC_FILE::close(int handle) {
 	gsm.print(F("AT+QFCLOSE="));
 	gsm.print(handle,DEC);
 	gsm.println("");
 	gsm.wait_ok(5000);
 }
 
-bool UC_FILE::Close_(int handle) {
+bool UC_FILE::close_(int handle) {
 	gsm.print(F("AT+QFCLOSE="));
 	gsm.print(handle,DEC);
 	gsm.println("");
 	gsm.wait_ok_ndb(5000);
 }
 
-bool UC_FILE::BeginWrite(int handle,int size) {
+bool UC_FILE::beginWrite(int handle,int size) {
 	//AT+QFWRITE=0,10
 	gsm.print(F("AT+QFWRITE="));
 	gsm.print(handle,DEC);
@@ -220,38 +220,43 @@ bool UC_FILE::BeginWrite(int handle,int size) {
 	//return (gsm.wait_ok(5000));
 }
 
-void UC_FILE::Write(char data) {
+void UC_FILE::write(char data) {
 	gsm.write(data);
 }
 
-void UC_FILE::Print(String data) {
+void UC_FILE::print(String data) {
 	gsm.print(data);
 }
 
-void UC_FILE::Println(String data) {
+void UC_FILE::println(String data) {
 	gsm.println(data);
 }
 
-bool UC_FILE::WaitFinish() {
+bool UC_FILE::waitFinish() {
 	return (gsm.wait_ok(10000));
 }
 
-bool UC_FILE::SeekAtStart(int handle) {
-	return (Seek(handle,0));
+bool UC_FILE::seekAtStart(int handle) {
+	return (seek(handle, 0, 0));
 }
 
-bool UC_FILE::Seek(int handle, long start_at) {
+bool UC_FILE::seekAtEnd(int handle) {
+	return (seek(handle, 0, 2));
+}
+
+bool UC_FILE::seek(int handle, long offset, char position) {
 	//AT+QFSEEK=0,0,0
 	gsm.print(F("AT+QFSEEK="));
 	gsm.print(handle,DEC);
 	gsm.print(F(","));
-	gsm.print(start_at,DEC);
+	gsm.print(offset,DEC);
 	gsm.print(F(","));
-	gsm.println(F("0"));	
+	gsm.print(position,DEC);
+	gsm.println("");
 	return (gsm.wait_ok(1000));
 }
 
-int UC_FILE::Read(int handle,int buf_size, char *buf) {
+int UC_FILE::read(int handle,int buf_size, char *buf) {
 	//AT+QFREAD=0,10
 	int size;
 	gsm.print(F("AT+QFREAD="));
@@ -295,22 +300,22 @@ int UC_FILE::Read(int handle,int buf_size, char *buf) {
 	return (size);
 }
 
-void UC_FILE::ReadFile(String pattern, String filename) {
-	int handle = Open(pattern,filename);
+void UC_FILE::readFile(String pattern, String filename) {
+	int handle = open(pattern,filename);
 	if (handle!=-1) {
-		SeekAtStart(handle);
+		seekAtStart(handle);
 		int buf_size=100;
 		char buf[buf_size];
-		int size_ = Read(handle,buf_size,buf);
+		int size_ = read(handle,buf_size,buf);
 		while (size_!=-1) {
 			for (int i=0;i<size_;i++) {
 				//Serial.write(buf[i]);
-				(*DataOutput)(buf[i]);
+				(*dataOutput)(buf[i]);
 			}
-			size_ = Read(handle,buf_size,buf);
+			size_ = read(handle,buf_size,buf);
 		}
    }
-   Close_(handle);
+   close_(handle);
 }
 
 
@@ -362,3 +367,10 @@ bool UC_FILE::upload(String pattern, String filename, int filesize, char* filePt
 	}
 }
 
+
+bool UC_FILE::flush(int handle) {
+	gsm.print(F("AT+QFFLUSH="));
+	gsm.print(handle, DEC);
+	gsm.println("");
+	return gsm.wait_ok_ndb(1000);
+}
