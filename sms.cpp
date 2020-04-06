@@ -19,10 +19,29 @@ void SMS::defaultSettings() {
 	gsm.debug(F("AT+QURCCFG=\"URCPORT\",\"UART1\""));
 	gsm.wait_ok(1000);
 	
-	// Read, write, receive SMS in SIM storage
+	// Read, write, receive SMS in SIM storage only
 	gsm.println(F("AT+CPMS=\"SM\",\"SM\",\"SM\""));
 	gsm.debug(F("AT+CPMS=\"SM\",\"SM\",\"SM\""));
-	gsm.wait_ok(1000);
+	//gsm.wait_ok_ndb(1000);
+	bool timedOut = false;
+	gsm.start_time_out();
+	while (!timedOut) {
+		if (gsm.available()) {
+			String req = gsm.readStringUntil('\n');
+			if (req.indexOf(F("+CPMS"))!= -1) {
+				int idx1 = req.indexOf(F(","));
+				int idx2 = req.indexOf(F(","), idx1+1);
+				maxSMS = req.substring(idx1+1, idx2).toInt();
+				timedOut = gsm.wait_ok_ndb(1000);
+			}
+		}
+		
+		if (gsm.time_out(5000)) {
+			timedOut = true;
+			//Serial.println(F("\r\nSMS Storage timeout"));
+			gsm.debug(F("\r\nSMS Storage timeout"));
+		}
+	}
 	
 	// Do not show header values
 	gsm.println(F("AT+CSDH=0"));
@@ -51,10 +70,13 @@ void SMS::sendln(String data) {
 	send(data+"\r\n");
 }
 
-void SMS::stop() {
+bool SMS::stop() {
 	gsm.write(0x1A);
 	if (gsm.wait_ok(10000)) {
 		gsm.debug("Send OK");
+		return true;
+	} else {
+		return false;
 	}
 }
 
@@ -63,10 +85,11 @@ unsigned char SMS::indexNewSMS() {
 }
 
 String SMS::readSMS(int index) {	
+	String data;
+	
 	gsm.print(F("AT+CMGR="));
 	gsm.print(index, DEC);
 	gsm.println("");
-  String data;
 	
 	while (1) {
 		if (gsm.available()) {
@@ -74,10 +97,12 @@ String SMS::readSMS(int index) {
 			//gsm.debug(req);
 			if (req.indexOf(F("+CMGR"))!= -1) {
 				SMSInfo = req.substring(req.indexOf(",") + 1);
+				data = req.substring(req.indexOf(",") + 1);
+				data += "\r\n";
 				//SMSInfo = req;
 				//data+=req;
 				//data+="\r\n";
-			}	else if (req.indexOf(F("OK"))!= -1) {
+			}	else if (req.indexOf(F("OK")) == 0) {
 				break;
 			}	else {
 				if ((req!="\r")&&(req!="\n")) {
@@ -90,6 +115,7 @@ String SMS::readSMS(int index) {
 }
 
 bool SMS::sendUSSD(String USSDcode) {
+	// Set SMS message format as text mode
 	gsm.print(F("AT+CUSD=1,\""));
 	gsm.print(USSDcode);
 	gsm.println("\"");
@@ -100,7 +126,12 @@ bool SMS::deleteSMS(int index) {
 	gsm.print(F("AT+CMGD="));
 	gsm.print(index,DEC);
 	gsm.println("");
-	return (gsm.wait_ok(10000));
+	return (gsm.wait_ok(1000));
+}
+
+bool SMS::deleteAllSMS() {
+	gsm.println(F("AT+CMGD=1,4"));
+	return (gsm.wait_ok(1000));
 }
 
 String SMS::convertStrUnicodeToTIS620(String data) {
@@ -185,4 +216,40 @@ String SMS::convertStrUnicodeToUTF8(String data) {
 //		Serial.print(out[x],HEX);
 //Serial.println();
 	return (String(out));	
+}
+
+unsigned char SMS::checkSMSReceived(unsigned char* smsIdx) {
+	bool timedOut = false;
+	unsigned char numSMS = 0;
+	for (int k = 0; k < maxSMS; k++) {
+		smsIdx[k] = 0;
+	}
+	
+	gsm.println(F("AT+CMGL=\"ALL\""));
+	
+	gsm.start_time_out();
+	while (!timedOut) {
+		if (gsm.available()) {
+			String req = gsm.readStringUntil('\n');
+			//Serial.println(req);
+			if (req.indexOf(F("+CMGL")) != -1) {
+				smsIdx[numSMS] = req.substring(req.indexOf(F(" "))+1, req.indexOf(F(","))).toInt();
+				numSMS += 1;
+			} else if (req.indexOf(F("OK")) == 0) {
+				//Serial.println(numSMS);
+				return numSMS;
+			} else if (req.indexOf(F("ERROR")) == 0) {
+				return numSMS;
+			}
+		}
+		if (gsm.time_out(5000)) {
+			timedOut = true;
+			//Serial.println(F("\r\nCHECK SMS timeout"));
+			gsm.debug(F("\r\nCHECK SMS timeout"));
+		}
+		
+	}
+	
+	return numSMS;
+	
 }
