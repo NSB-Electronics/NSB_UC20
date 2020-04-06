@@ -264,10 +264,8 @@ bool SSL::waitRead(long time) {
 		if (gsm.available()) {
 			String req = gsm.readStringUntil('\n');
 			//Serial.println(req);
-			if (req.indexOf(F("+QSSLURC: \"recv\"")) != -1)
-			{
+			if (req.indexOf(F("+QSSLURC: \"recv\"")) != -1) {
 				return (true);
-				
 			}
 		
 		}
@@ -324,7 +322,7 @@ bool SSL::state() {
 			String req = gsm.readStringUntil('\n');
 			//Serial.println(req);
 			if (req.indexOf(F("OK")) != -1) {
-					return (true);
+				return (true);
 			}
 		
 		}
@@ -384,10 +382,9 @@ int SSL::readBuffer() {
 }
 
 int SSL::readBuffer(unsigned char contextid, int max_len) {
-	const long interval = 3000; 
-	unsigned long previousMillis = millis(); 
-	unsigned long currentMillis; 
-	unsigned char flag = 0;  
+	bool timedOut = false;
+	unsigned char flag = 0;
+	int readlen = 0;	
 		
 //	gsm.print(F("AT+QIRD="));
 //	gsm.print(String(contextid));
@@ -400,35 +397,29 @@ int SSL::readBuffer(unsigned char contextid, int max_len) {
 		str	+= String(max_len);
 	gsm.debug(str);
 	gsm.println(str);
-	while (1) {
-		currentMillis = millis();
+	gsm.start_time_out();
+	while (!timedOut) {
 		if (gsm.available()) {
 			String req = gsm.readStringUntil('\n');
 			if (req.indexOf(F("+QSSLRECV:")) != -1)	{
-				int index = req.indexOf(F(" "));
-				//Serial.println(req);
-				int tmp = req.substring(index+1).toInt();
-				//Serial.print("HERE: ");
-				//Serial.println(tmp);
-				//if (tmp != 0) {
-					return (tmp);	
-				//}
-				//return(req.substring(index+1).toInt());	
+				readlen = req.substring(req.indexOf(F(" "))+1).toInt();
+				return (readlen);
 			}
 		}
-		if (currentMillis - previousMillis >= interval) {
-			if (flag++==3)
-				return (0);
-			gsm.debug(F("ReadBuffer timeout: "));
+		if (gsm.time_out(3000)) {
+			gsm.debug(F("SSL ReadBuffer timeout: "));
 			gsm.debug(String(flag));
 			gsm.debug(F("\r\n"));
-			//Serial.print("ReadBuffer timeout: ");
-			//Serial.println(flag);
+			Serial.print("SSL ReadBuffer timeout: ");
+			Serial.println(flag);
 			gsm.debug(str);
 			gsm.println(str);
-			previousMillis = millis(); 
+			if (flag++==3)
+				timedOut = true;
+			gsm.start_time_out();
 		}
 	}
+	return (0);
 }
 
 int SSL::readBuffer(int max_len) {

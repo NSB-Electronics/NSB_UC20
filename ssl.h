@@ -10,15 +10,15 @@
 
 #define CIPHER_AES_256_CBC_SHA		"0x0035"
 #define CIPHER_AES_128_CBC_SHA		"0x002F"
-#define CIPHER_RC4_128_SHA				"0x0005"
-#define CIPHER_RC4_128_MD5				"0x0004"
+#define CIPHER_RC4_128_SHA			"0x0005"
+#define CIPHER_RC4_128_MD5			"0x0004"
 #define CIPHER_3DES_EDE_CBC_SHA		"0x000A"
 #define CIPHER_AES_256_CBC_SHA256	"0x003D"
-#define CIPHER_ALL								"0xFFFF"
+#define CIPHER_ALL					"0xFFFF"
 
-#define NO_AUTH							0
-#define SERVER_AUTH					1
-#define SERVER_CLIENT_AUTH	2
+#define NO_AUTH					0
+#define SERVER_AUTH				1
+#define SERVER_CLIENT_AUTH		2
 
 #define CARE_TIME_CHECK			0
 #define IGNORE_TIME_CHECK		1
