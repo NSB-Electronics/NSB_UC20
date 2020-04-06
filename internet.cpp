@@ -47,7 +47,7 @@ bool INTERNET::connect(unsigned char contextid) {
 	String 	str = "AT+QIACT=";
 			str += String(contextid);
 	gsm.println(str);
-	return (gsm.wait_ok(10000));
+	return (gsm.wait_ok(150000));
 }
 
 bool INTERNET::connect() {
@@ -58,7 +58,7 @@ bool INTERNET::disconnect(unsigned char contextid) {
 	String str = "AT+QIDEACT=";
 			str += String(contextid);
 	gsm.println(str);
-	return (gsm.wait_ok(10000));
+	return (gsm.wait_ok(40000));
 }
 
 bool INTERNET::disconnect() {
@@ -73,14 +73,14 @@ String INTERNET::getIP() {
 	gsm.start_time_out();
 	while (1)	{
 		String req = gsm.readStringUntil('\n');	
-	  
-	  if (req.indexOf(F("+QIACT:")) != -1) {
+		
+		if (req.indexOf(F("+QIACT:")) != -1) {
 			char index1 = req.indexOf(F("\""));
 			char index2 = req.indexOf(F("\""),index1+1);
 			gsm.wait_ok(1000);
 			return (req.substring(index1+1,index2));
 		}
-		if (gsm.time_out(20000)) {
+		if (gsm.time_out(60000)) {
 			return (F("GetIP Timeout"));
 		}
 	}
