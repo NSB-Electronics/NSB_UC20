@@ -36,7 +36,7 @@
 // Largest full packet we're able to send.
 // Need to be able to store at least ~90 chars for a connect packet with full
 // 23 char client ID.
-#define MQTT_MAX_PACKET_SIZE 150
+#define MQTT_MAX_PACKET_SIZE 1500
 
 #define MQTT_CONN_USERNAMEFLAG    0x80
 #define MQTT_CONN_PASSWORDFLAG    0x40
@@ -49,19 +49,19 @@
 class UCxMQTTS
 {
 	private:
-  const char *servername;
-  int16_t portnum;
-  const char *clientid;
-  const char *username;
-  const char *password;
-  const char *will_topic;
-  const char *will_payload;
-  uint8_t will_qos;
-  uint8_t will_retain;
+	const char *servername;
+	uint16_t portnum;
+	const char *clientid;
+	const char *username;
+	const char *password;
+	const char *will_topic;
+	const char *will_payload;
+	uint8_t will_qos;
+	uint8_t will_retain;
 	uint8_t buffer[MQTT_MAX_PACKET_SIZE];
-	uint8_t writeSSL(uint8_t* buf, uint8_t length); 
-	int readDataFrom3GBufferMode();
-	unsigned int readDataInBufferMode(unsigned int buf_len);
+	uint16_t writeSSL(uint8_t* buf, uint16_t length); 
+	uint16_t readDataFrom3GBufferMode();
+	uint16_t readDataInBufferMode(uint16_t buf_len);
 	void checkRXsub();
 	
 	
@@ -76,13 +76,13 @@ class UCxMQTTS
 	unsigned char connectMQTTUser(String id, String user, String pass);
 	bool disconnectMQTTUser();
 	String connectCodeString(unsigned char input);
-	void publish(char *topic ,int lentopic, char *payload, int lenpay, uint8_t qos);
+	void publish(char *topic, uint16_t lentopic, char *payload, uint16_t lenpay, uint8_t qos);
 	void publish(String topic, String payload, uint8_t qos);
 	void publish(String topic, String payload);
-	void subscribe(char *topic, int topiclen, uint8_t qos);
+	void subscribe(char *topic, uint16_t topiclen, uint8_t qos);
 	void subscribe(String topic, uint8_t qos);
 	void subscribe(String topic);
-	void unsubscribe(char *topic, int topiclen);
+	void unsubscribe(char *topic, uint16_t topiclen);
 	void unsubscribe(String topic);
 	void clearBuffer();
 	void ping();
@@ -92,7 +92,7 @@ class UCxMQTTS
 	protected:	
 	bool connected = false;
 	bool connectAck = false;
-	unsigned int len_buffer_in_module = 0;
+	uint16_t len_buffer_in_module = 0;
 	uint16_t packet_id_counter;
 	unsigned long previousMillis_ping = 0; 
 	unsigned long currentMillis_ping; 
