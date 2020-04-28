@@ -313,12 +313,6 @@ void UCxMQTTS::publish(char *topic, uint16_t lentopic, char *payload, uint16_t l
 		length++;
 	}
 	
-	for (int k = 0; k < length; k++) {
-		if (buffer[k] < 0x10) Serial.print("0");
-		Serial.print(buffer[k], HEX);
-		Serial.print(",");
-	}
-	Serial.println();
 	String tmp = "0x";
 	String dat = String(buffer[0], HEX);
 	dat.toUpperCase();
