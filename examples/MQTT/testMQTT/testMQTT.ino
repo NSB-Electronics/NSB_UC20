@@ -18,9 +18,9 @@ UCxMQTT mqtt;
 
 #define MQTT_SERVER      "io.adafruit.com"
 #define MQTT_PORT        "1883"
-#define MQTT_ID          "NSB_UC20_TEST"   // Used to identify the connection
-#define MQTT_USER        "NSBarnes"
-#define MQTT_PASSWORD    "aio_aGER638i7za0R2r7kTLMtbAWG3Dw"
+#define MQTT_ID          ""   // Used to identify the connection
+#define MQTT_USER        ""
+#define MQTT_PASSWORD    ""
 
 unsigned long previousmqtt = 0;
 const long intervalmqtt = 60000;
