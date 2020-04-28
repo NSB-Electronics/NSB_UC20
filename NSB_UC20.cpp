@@ -403,10 +403,10 @@ bool UC20::resetDefaults() {
 }
 
 String UC20::getNetworkTimeString() {
-	_Serial->println(F("AT+QLTS"));
+	_Serial->println(F("AT+QLTS=1"));
 	start_time_out();
 	while (1) {
-		String req = _Serial->readStringUntil('\n');	 
+		String req = _Serial->readStringUntil('\n');
 		if (req.indexOf(F("+QLTS")) != -1) {
 			wait_ok(1000);
 			return (req.substring(req.indexOf(F("\""))+1, req.lastIndexOf(F("\""))));
