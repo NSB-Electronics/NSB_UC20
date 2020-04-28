@@ -35,7 +35,7 @@ public:
 	bool setCertificate(unsigned char contextid);
 	bool setIgnorelocaltime(unsigned char contextid, bool ignoretime);
 	int open(unsigned char pdpid, unsigned char contextid, unsigned char clientid, String serverid, String port, unsigned char acc_mode);
-	bool close(unsigned char contextid);
+	bool close(unsigned char clientid);
 	bool startSend(unsigned char clientid);
 	bool startSend(unsigned char clientid, int len);
 	bool startSend();
@@ -43,7 +43,7 @@ public:
 	bool waitSendFinish();
 	bool receiveAvailable();
 	bool waitRead(long time);
-	bool state();
+	int state();
 	int read(unsigned char contextid);
 	int  readBuffer();
 	int  readBuffer(unsigned char contextid, int max_len);

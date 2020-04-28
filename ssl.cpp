@@ -84,9 +84,9 @@ int SSL::open(unsigned char pdpid, unsigned char contextid, unsigned char client
 	return (-2);
 }
 
-bool SSL::close(unsigned char contextid) {
+bool SSL::close(unsigned char clientid) {
 	gsm.print(F("AT+QSSLCLOSE="));
-	gsm.println(String(contextid));
+	gsm.println(String(clientid));
 	
 	const long interval = 10000; 
 	unsigned long previousMillis = millis(); 
@@ -144,33 +144,25 @@ bool SSL::startSend(unsigned char clientid, int len) {
 	gsm.print(",");
 	gsm.println(String(len));
 	
-	String buffer_="";
 	unsigned long previousMillis = millis(); 
 	unsigned long currentMillis;
 	while (1) {
 		if (gsm.available()) {
-			char c = gsm.read();
-			//Serial.write(c);
-			if(c =='>')	{
-				//gsm.debug("send ready");
+			String req = gsm.readStringUntil('\n');
+			//Serial.println(req);
+			if (req.indexOf(F(">")) != -1) {
+				gsm.debug(F("START SEND OK\r\n"));
+				//Serial.println(F("START SEND OK"));
 				return (true);
-			}	else {
-				buffer_ += c;
-				if (buffer_.indexOf(F("ERROR"))!=-1) {
-					gsm.debug("Send Error\r\n");
-					return (false);
-				}
-				if (buffer_.indexOf(F("NO CARRIER"))!=-1) {
-					gsm.debug("NO CARRIER\r\n");
-					return (false);
-				}
+			} else if (req.indexOf(F("ERROR")) != -1) {
+				gsm.debug(F("START SEND ERROR\r\n"));
+				//Serial.println(F("START SEND ERROR"));
+				return (false);
+			} else if (req.indexOf(F("SEND FAIL")) != -1) {
+				gsm.debug(F("START SEND FAIL\r\n"));
+				//Serial.println(F("START SEND FAIL"));
+				return (false);
 			}
-		/*	if(c =='E')
-			{
-				gsm.debug("send fail");
-				return(false);
-			}
-*/			
 		}
 		currentMillis = millis();
 		if (currentMillis - previousMillis >= interval) {
@@ -184,7 +176,8 @@ bool SSL::startSend(unsigned char clientid, int len) {
 			
 			previousMillis = currentMillis;
 			if (flag_retry >= 3)	{
-				gsm.debug("send error (timeout)\r\n");
+				gsm.debug(F("startSend error (timeout)\r\n"));
+				//Serial.println(F("startSend error (timeout)"));
 				return (false);
 			}
 		}			
@@ -206,10 +199,10 @@ bool SSL::stopSend() {
 			String req = gsm.readStringUntil('\n');
 			//Serial.println(req);
 			if (req.indexOf(F("SEND OK"))!= -1) {
-					return (true);
+				return (true);
 			}
-			if(req.indexOf(F("SEND FAIL"))!= -1) {
-					return (false);
+			if(req.indexOf(F("SEND FAIL")) != -1) {
+				return (false);
 			}
 		}
 		unsigned long currentMillis = millis();
@@ -230,27 +223,33 @@ bool SSL::waitSendFinish() {
 	unsigned char cnt = 0;
 	
 	while (1) {
+		
+		if (gsm.available()) {
+			String req = gsm.readStringUntil('\n');
+			if (req.indexOf(F("SEND OK")) != -1) {
+				gsm.debug(F("SEND OK\r\n"));
+				//Serial.println(F("WAIT SEND OK"));
+				return (true);
+			} else if (req.indexOf(F("ERROR")) != -1) {
+				gsm.debug(F("WAIT SEND ERROR\r\n"));
+				//Serial.println(F("WAIT SEND ERROR"));
+				return (false);
+			} else if (req.indexOf(F("SEND FAIL")) != -1) {
+				gsm.debug(F("WAIT SEND FAIL\r\n"));
+				//Serial.println(F("WAIT SEND FAIL"));
+				return (false);
+			}
+		}
+		
 		currentMillis = millis();
 		if (currentMillis - previousMillis >= interval) {
 			cnt++;
 			if (cnt > 3) {
-				gsm.debug("Error unfinish");
+				gsm.debug("waitSend error (timeout)\r\n");
+				Serial.println("waitSend error (timeout)");
 				return (false);
 			}
 			previousMillis = currentMillis; 	
-		}
-		if (gsm.available()) {
-			String req = gsm.readStringUntil('\n');
-			//gsm.debug(req);
-			if (req.indexOf(F("SEND OK")) != -1) {
-				//Serial.println("SEND OK");
-				return (true);	
-			}
-			if (req.indexOf(F("SEND FAIL")) != -1) {
-				//Serial.println("SEND FAIL");
-				gsm.debug(req);
-				return (false);	
-			}
 		}
 			
 	}
@@ -312,17 +311,27 @@ int SSL::read(unsigned char contextid) {
 }
 
 
-bool SSL::state() {
+int SSL::state() {
 	gsm.println(F("AT+QSSLSTATE"));
 	const long interval = 5000; 
 	unsigned long previousMillis = millis(); 
 	unsigned char flag = 1;
+	int sslState = -1;
 	while (flag) {
 		if (gsm.available()) {
 			String req = gsm.readStringUntil('\n');
 			//Serial.println(req);
+			if (req.indexOf(F("+QSSLSTATE:")) != -1) {
+				int idxComma = 0;
+				for (byte k = 0; k < 5; k++) {
+					idxComma = req.indexOf(',') + 1;
+					req = req.substring(idxComma, req.length()+1);
+				}
+				idxComma = req.indexOf(',');
+				sslState = req.substring(0, idxComma).toInt();
+			}
 			if (req.indexOf(F("OK")) != -1) {
-				return (true);
+				return sslState;
 			}
 		
 		}
@@ -330,7 +339,7 @@ bool SSL::state() {
 		if (currentMillis - previousMillis >= interval) {
 			//Serial.println("out");
 			previousMillis = currentMillis;
-			return (false);
+			return sslState;
 		}			
 	}
 }
@@ -385,11 +394,6 @@ int SSL::readBuffer(unsigned char contextid, int max_len) {
 	bool timedOut = false;
 	unsigned char flag = 0;
 	int readlen = 0;	
-		
-//	gsm.print(F("AT+QIRD="));
-//	gsm.print(String(contextid));
-//	gsm.print(",");
-//	gsm.println(String(max_len));
 	
 	String str = "AT+QSSLRECV=";
 		str += String(contextid);
@@ -410,8 +414,8 @@ int SSL::readBuffer(unsigned char contextid, int max_len) {
 			gsm.debug(F("SSL ReadBuffer timeout: "));
 			gsm.debug(String(flag));
 			gsm.debug(F("\r\n"));
-			Serial.print("SSL ReadBuffer timeout: ");
-			Serial.println(flag);
+			//Serial.print("SSL ReadBuffer timeout: ");
+			//Serial.println(flag);
 			gsm.debug(str);
 			gsm.println(str);
 			if (flag++==3)
