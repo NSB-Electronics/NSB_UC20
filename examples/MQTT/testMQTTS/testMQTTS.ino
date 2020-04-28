@@ -17,9 +17,9 @@
 
 #define MQTT_SERVER     "io.adafruit.com"
 #define MQTT_PORT       "8883"
-#define MQTT_ID          "MQTTS_TEST"   // Used to identify the connection
-#define MQTT_USER        "YOUR_USERNAME"
-#define MQTT_PASSWORD    "YOUR_PASSWORD/KEY"
+#define MQTT_ID         "MQTTS_TEST"   // Used to identify the connection
+#define MQTT_USER       "YOUR_USERNAME"
+#define MQTT_PASSWORD   "YOUR_PASSWORD/KEY"
 
 
 UC20 gsm;
@@ -173,7 +173,7 @@ void callback(String topic, char *payload, unsigned char payloadLength) {
 void connectToServer() {
   do {
     Serial.print(F("I:\tConnecting to MQTT Server: "));
-    if (mqtt.disconnectMQTTServer(SSL_CONTEXT_ID)) {
+    if (mqtt.disconnectMQTTServer()) {
       //mqtt.connectMQTTServer(MQTT_SERVER, MQTT_PORT);
       mqtt.connectMQTTServer(SSL_CONTEXT_ID, MQTT_SERVER, MQTT_PORT);
     }
