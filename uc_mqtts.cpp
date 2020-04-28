@@ -24,13 +24,13 @@ bool UCxMQTTS::connectMQTTServer(String web, String port) {
 	return (connected);
 }
 
-bool UCxMQTTS::disconnectMQTTServer(unsigned char contextid) {
+bool UCxMQTTS::disconnectMQTTServer(unsigned char clientid) {
 	connected = false;
-	return (ssl_mqtts.close(contextid));
+	return (ssl_mqtts.close(clientid));
 }
 
 bool UCxMQTTS::disconnectMQTTServer() {
-	return (disconnectMQTTServer(1));
+	return (disconnectMQTTServer(0));
 }
 
 // The current MQTT spec is 3.1.1 and available here:
@@ -41,8 +41,7 @@ unsigned char UCxMQTTS::connectMQTTUser(String id, String user, String pass) {
 	uint32_t length = 0;		// Total length of the mqtt data (excludes fixed header)
 	uint32_t varLength = 0;		// Stores the temp variable length in order to encode the data length
 	uint32_t payloadLen = 0;	// Payload length
-	uint8_t encodedByte[4]; 	// Variable length bytes can be up to 4 bytes long
-	uint8_t encodedByteLen = 0;	// Encoded byte length used to build remaining length
+	uint8_t encodedByte; 	    // Variable length bytes can be up to 4 bytes long
 	uint8_t variableHeaderLen = 10; // Always 10 for a CONNECT packet
 	uint8_t connectFlags = MQTT_CONN_CLEANSESSION;	// Always clean the session
 	
@@ -61,60 +60,39 @@ unsigned char UCxMQTTS::connectMQTTUser(String id, String user, String pass) {
 	
 	varLength = variableHeaderLen + payloadLen; // Variable length to encode
 	
+	buffer[0] = (MQTT_CTRL_CONNECT << 4); // Control packet type
+	length++;
+	
 	// Remaining length larger than 127, need to split into 2 bytes or more depending on length
 	// See MQTT spec section 2.2.3
 	do {
-		encodedByte[encodedByteLen] = varLength % 128;
+		encodedByte = varLength % 128;
 		varLength = varLength / 128;
 		if (varLength > 0) {
-			encodedByte[encodedByteLen] = encodedByte[encodedByteLen] | 128;
-			encodedByteLen += 1;
+			encodedByte = encodedByte | 128;
 		}
-		
+		buffer[length] = encodedByte;
+		length++;
 	} while (varLength > 0);
 	
-	buffer[0] = (MQTT_CTRL_CONNECT << 4); // Control packet type
-	switch (encodedByteLen) {
-		case 0:
-			buffer[1] = encodedByte[0];    // Remaining Length encoded
-			break;
-		case 1:
-			buffer[1] = encodedByte[0];    // Remaining Length encoded
-			buffer[2] = encodedByte[1];    // Remaining Length encoded
-			break;
-		case 2:
-			buffer[1] = encodedByte[0];    // Remaining Length encoded
-			buffer[2] = encodedByte[1];    // Remaining Length encoded
-			buffer[3] = encodedByte[2];    // Remaining Length encoded
-			break;
-		case 3:
-			buffer[1] = encodedByte[0];    // Remaining Length encoded
-			buffer[2] = encodedByte[1];    // Remaining Length encoded
-			buffer[3] = encodedByte[2];    // Remaining Length encoded
-			buffer[4] = encodedByte[3];    // Remaining Length encoded
-			break;
-		default:
-			Serial.println(F("Issue with Remaining Length!"));
-			break;
-	}
+	buffer[length+0] = 0x00;    // Protocol name Length MSB (Fix=0)
+	buffer[length+1] = 0x04;    // Protocol name Length LSB (Fix=4)
+	buffer[length+2] = 'M';     // Protocol name   (Fix=M)
+	buffer[length+3] = 'Q';     // Protocol name   (Fix=Q)
+	buffer[length+4] = 'T';     // Protocol name   (Fix=T)
+	buffer[length+5] = 'T';     // Protocol name   (Fix=T)
+	buffer[length+6] = MQTT_PROTOCOL_LEVEL;    // Protocol Level  (Fix=4)
+	buffer[length+7] = connectFlags;    // Connect Flags (Bit7: user name flag), (Bit6: password flag), (Bit5: will retain), (Bit4-3: will Qos), (Bit2: will flag), (Bit1: clear session), (Bit0: fixed 0)
+	buffer[length+8] = MQTT_CONN_KEEPALIVE >> 8;   // keep alive MSB
+	buffer[length+9] = MQTT_CONN_KEEPALIVE & 0xFF; // keep alive LSB time ping 16 bit (seconds)
 	
-	buffer[2+encodedByteLen]  = 0x00;    // Protocol name Length MSB (Fix=0)
-	buffer[3+encodedByteLen]  = 0x04;    // Protocol name Length LSB (Fix=4)
-	buffer[4+encodedByteLen]  = 'M';     // Protocol name   (Fix=M)
-	buffer[5+encodedByteLen]  = 'Q';     // Protocol name   (Fix=Q)
-	buffer[6+encodedByteLen]  = 'T';     // Protocol name   (Fix=T)
-	buffer[7+encodedByteLen]  = 'T';     // Protocol name   (Fix=T)
-	buffer[8+encodedByteLen]  = MQTT_PROTOCOL_LEVEL;    // Protocol Level  (Fix=4)
-	buffer[9+encodedByteLen]  = connectFlags;    // Connect Flags (Bit7: user name flag), (Bit6: password flag), (Bit5: will retain), (Bit4-3: will Qos), (Bit2: will flag), (Bit1: clear session), (Bit0: fixed 0)
-	buffer[10+encodedByteLen] = MQTT_CONN_KEEPALIVE >> 8;   // keep alive MSB
-	buffer[11+encodedByteLen] = MQTT_CONN_KEEPALIVE & 0xFF; // keep alive LSB time ping 16 bit (seconds)
-
+	length += 10;
 	
 	unsigned char len = id.length();
-	buffer[12+encodedByteLen] = (len >> 8) & 0x00FF; // clientid length MSB
-	buffer[13+encodedByteLen] = len & 0x00FF;        // clientid length LSB
+	buffer[length] = (len >> 8) & 0x00FF; // clientid length MSB
+	buffer[length+1] = len & 0x00FF;      // clientid length LSB
+	length += 2;
 	
-	length = 14 + encodedByteLen;
 	for (byte k = 0; k < len; k++) {
 		buffer[length] = id[k];
 		length++;
@@ -285,37 +263,62 @@ String UCxMQTTS::connectCodeString(unsigned char input) {
 
 void UCxMQTTS::publish(char *topic, uint16_t lentopic, char *payload, uint16_t lenpay, uint8_t qos) {
 	
+	uint32_t varLength = 0;	// Stores the temp variable length in order to encode the data length
+	uint8_t encodedByte; 	// Variable length bytes can be up to 4 bytes long
+	uint16_t length = 0;
+	
 	// ToDO: Need to add QoS and retain?
 	clearBuffer();
-
+	
+	varLength = 2 + lentopic + lenpay; // Variable length to encode
+	if (qos > 0) {
+		varLength += 2;
+	}
+	
 	buffer[0] = MQTT_CTRL_PUBLISH << 4 | qos << 1;    // Control packet type (Fix=3x) ,x bit3 = DUP , xbit2-1 = QoS level , xbit0 = Retain
-	buffer[1] = 0x00;     // remaining length
+	length++;
+	
+	// Remaining length larger than 127, need to split into 2 bytes or more depending on length
+	// See MQTT spec section 2.2.3
+	do {
+		encodedByte = varLength % 128;
+		varLength = varLength / 128;
+		if (varLength > 0) {
+			encodedByte = encodedByte | 128;
+		}
+		buffer[length] = encodedByte;
+		length++;
+	} while (varLength > 0);
 
 	uint16_t len = lentopic;
-	buffer[2] = (len >> 8) & 0x00FF; //  topic length MSB
-	buffer[3] = len & 0x00FF;        //  topic length LSB
-
-	uint16_t all_len = 4;
+	buffer[length] = (len >> 8) & 0x00FF; //  topic length MSB
+	buffer[length+1] = len & 0x00FF;      //  topic length LSB
+	length += 2;
+	
 	for (uint16_t k = 0; k < len; k++) {
-		buffer[all_len] = topic[k];
-		all_len++;
-	}
-
-	len = lenpay;
-	for (uint16_t k = 0; k < len; k++) {
-		buffer[all_len] = payload[k];
-		all_len++;
+		buffer[length] = topic[k];
+		length++;
 	}
 	
 	if (qos > 0) {
-		buffer[all_len] = (packet_id_counter >> 8) & 0xFF; // Packet Identifier MSB
-		buffer[all_len+1] = packet_id_counter & 0xFF;			// Packet Identifier LSB
-		all_len += 2;
+		buffer[length] = (packet_id_counter >> 8) & 0x00FF; // Packet Identifier MSB
+		buffer[length+1] = packet_id_counter & 0x00FF;		// Packet Identifier LSB
+		length += 2;
 		packet_id_counter++;
 	}
-
-	buffer[1] = all_len-2;
 	
+	len = lenpay;
+	for (uint16_t k = 0; k < len; k++) {
+		buffer[length] = payload[k];
+		length++;
+	}
+	
+	for (int k = 0; k < length; k++) {
+		if (buffer[k] < 0x10) Serial.print("0");
+		Serial.print(buffer[k], HEX);
+		Serial.print(",");
+	}
+	Serial.println();
 	String tmp = "0x";
 	String dat = String(buffer[0], HEX);
 	dat.toUpperCase();
@@ -323,7 +326,7 @@ void UCxMQTTS::publish(char *topic, uint16_t lentopic, char *payload, uint16_t l
 	tmp += " -> Publish message";
 	gsm.debug(tmp);
 	Serial.println(tmp);
-	writeSSL(buffer, all_len);
+	writeSSL(buffer, length);
 }
 
 void UCxMQTTS::publish(String topic, String payload, uint8_t qos) {
