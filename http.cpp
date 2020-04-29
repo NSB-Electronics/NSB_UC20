@@ -27,10 +27,9 @@ bool HTTP::url(String url) {
 		
 	}
 	gsm.start_time_out();
-	String req;
 	unsigned char flag=1;
 	while (flag) {
-		req = gsm.readStringUntil('\n');	
+		String req = gsm.readStringUntil('\n');	
 	    if (req.indexOf(F("CONNECT")) != -1) {
 			flag = 0;
 		}
@@ -44,18 +43,15 @@ bool HTTP::url(String url) {
 }
 int HTTP::get(unsigned int rspTime) {
 	bool timedOut = false;
-	String req;
-	String str = "AT+QHTTPGET=";
-			str += String(rspTime);
-	
-	gsm.println(str);
+	gsm.print(F("AT+QHTTPGET="));
+	gsm.println(String(rspTime));
 	while (!gsm.available()) {
 		
 	}
 	gsm.start_time_out();
 	
 	while (!timedOut) {
-		req = gsm.readStringUntil('\n');	
+		String req = gsm.readStringUntil('\n');	
 	    if (req.indexOf(F("+QHTTPGET:")) != -1) {
 			char index1 = req.indexOf(F(","));
 			return (req.substring(index1+1,index1+4).toInt());
@@ -78,23 +74,20 @@ int HTTP::get() {
 }
 
 int HTTP::post(String data, unsigned int inputTime, unsigned int rspTime) {
-	bool timedOut = false;
-	String req;	
-	String str = "AT+QHTTPPOST=";
-			str += (data.length(), DEC);
-			str += ",";
-			str += String(inputTime);
-			str += ",";
-			str += String(rspTime);
-	gsm.println(str);
-	
+	bool timedOut = false;	
+	gsm.print(F("AT+QHTTPPOST="));
+	gsm.print(String(data.length()));
+	gsm.print(F(","));
+	gsm.print(String(inputTime));
+	gsm.print(F(","));
+	gsm.println(String(rspTime));
 	while (!gsm.available()) {
 		
 	}
 	gsm.start_time_out();
 	unsigned char flag=1;
 	while (flag){
-		req = gsm.readStringUntil('\n');	
+		String req = gsm.readStringUntil('\n');	
 	    if (req.indexOf(F("CONNECT")) != -1) {
 			flag=0;
 		}
@@ -108,7 +101,7 @@ int HTTP::post(String data, unsigned int inputTime, unsigned int rspTime) {
 	}
 	gsm.start_time_out();
 	while (!timedOut) {
-		req = gsm.readStringUntil('\n');	
+		String req = gsm.readStringUntil('\n');	
 	    if (req.indexOf(F("+QHTTPPOST")) != -1) {
 			char index1 = req.indexOf(F(","));
 			return (req.substring(index1+1,index1+4).toInt());
@@ -134,36 +127,48 @@ int HTTP::post() {
 	return (post("", 80, 80));
 }
 
-
-String HTTP::read(unsigned int waitTime) {
+int HTTP::read(char *recvBuffer, unsigned int maxLen, unsigned int waitTime) {
 	bool timedOut = false;
-	String req;
-	String returnStr;
-	String str = "AT+QHTTPREAD=";
-			str += String(waitTime);
-	
-	gsm.println(str);
+	unsigned int pBuffer = 0;
+	gsm.print(F("AT+QHTTPREAD="));
+	gsm.println(String(waitTime));
 	gsm.start_time_out();
 	
 	while (!timedOut) {
-		req = gsm.readStringUntil('\r\n');	
+		String req = gsm.readStringUntil('\r\n');	
 	    //Serial.println(req);
-		
 		if (req.indexOf(F("+QHTTPREAD: 0")) != -1) {
-			return (returnStr);
+			recvBuffer[pBuffer] = '\0';
+			return (pBuffer);
 		} else {
 			if ((req.indexOf(F("OK")) > 0)) {
-				// If the OK is in the response it must still return it as it is part of the message
-				returnStr += req;
-				returnStr += "\r\n";
+				// If the OK is in the response function must still return it as it is part of the message
+				if (req.length() > 1) req.concat("\r\n");
+				for (int k = 0; k < req.length(); k++) {
+					recvBuffer[pBuffer] = req.charAt(k);
+					pBuffer++;
+					if (pBuffer >= maxLen-1) {
+						// No more space in char array, abort
+						recvBuffer[pBuffer] = '\0';
+						return (-1);
+					}
+				}
 			} else if ((req.indexOf(F("OK")) == -1) && (req.indexOf(F("CONNECT")) == -1)) {
 				// Ignores modem OK and CONNECT to only return the HTTP response information
-				returnStr += req;
-				returnStr += "\r\n";
+				if (req.length() > 1) req.concat("\r\n");
+				for (int k = 0; k < req.length(); k++) {
+					recvBuffer[pBuffer] = req.charAt(k);
+					pBuffer++;
+					if (pBuffer >= maxLen-1) {
+						// No more space in char array, abort
+						recvBuffer[pBuffer] = '\0';
+						return (-1);
+					}
+				}
 			}
 		}
 		if (req.indexOf(F("ERROR")) != -1) {
-			return (req);
+			return (-1);
 		}
 		
 		if (gsm.time_out((waitTime * 1000) + 5000)) {
@@ -171,16 +176,20 @@ String HTTP::read(unsigned int waitTime) {
 			gsm.debug(F("\r\nHTTP READ timeout"));
 		}
 	}
-	return ("HTTP READ timeout");
+	return (-1);
 }
 
 
-String HTTP::read() {
-	return read(80);
+int HTTP::read(char *recvBuffer, unsigned int maxLen) {
+	return read(recvBuffer, maxLen, 80);
+}
+
+int HTTP::read(char *recvBuffer) {
+	return read(recvBuffer, 3000, 80);
 }
 	
 void HTTP::ReadData() {
-	gsm.println("AT+QHTTPREAD=80");
+	gsm.println(F("AT+QHTTPREAD=80"));
 //+QHTTPREAD: 0	
 }
 
@@ -207,4 +216,3 @@ bool HTTP::SaveResponseToMemory(String pattern,String Filename) {
 	}
 	
 }
-

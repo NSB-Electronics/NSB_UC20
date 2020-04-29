@@ -13,8 +13,9 @@ public:
 	int  post(String data, unsigned int inputTime, unsigned int rspTime);
 	int  post(String data);
 	int  post();
-	String read(unsigned int waitTime);
-	String read();
+	int  read(char *recvBuffer, unsigned int maxLen, unsigned int waitTime);
+	int  read(char *recvBuffer, unsigned int maxLen);
+	int  read(char *recvBuffer);
 	void ReadData();
 	bool SaveResponseToMemory(String pattern, String Filename);
 	bool url(String url);
