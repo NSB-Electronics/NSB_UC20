@@ -393,14 +393,13 @@ int SSL::readBuffer() {
 int SSL::readBuffer(unsigned char contextid, int max_len) {
 	bool timedOut = false;
 	unsigned char flag = 0;
-	int readlen = 0;	
+	int readlen = 0;
 	
-	String str = "AT+QSSLRECV=";
-		str += String(contextid);
-		str	+= ",";
-		str	+= String(max_len);
-	gsm.debug(str);
-	gsm.println(str);
+	gsm.print(F("AT+QSSLRECV="));
+	gsm.print(String(contextid));
+	gsm.print(F(","));
+	gsm.println(String(max_len));
+	
 	gsm.start_time_out();
 	while (!timedOut) {
 		if (gsm.available()) {
@@ -416,8 +415,6 @@ int SSL::readBuffer(unsigned char contextid, int max_len) {
 			gsm.debug(F("\r\n"));
 			//Serial.print("SSL ReadBuffer timeout: ");
 			//Serial.println(flag);
-			gsm.debug(str);
-			gsm.println(str);
 			if (flag++==3)
 				timedOut = true;
 			gsm.start_time_out();

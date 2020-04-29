@@ -41,8 +41,6 @@ void UC20::setPowerKeyPin(int pin) {
 }
 
 bool UC20::powerOn() {
-	
-	String req="";
 	//_Serial->println(F("AT"));
 	
 	pinMode(START_PIN, OUTPUT);
@@ -64,7 +62,7 @@ bool UC20::powerOn() {
 	
 	while (1) {
 		if (_Serial->available()) {
-			req = _Serial->readStringUntil('\n');	
+			String req = _Serial->readStringUntil('\n');	
 			// debug(req);
 			if (req.indexOf(F("RDY")) != -1) {
 				start_time_out();
@@ -101,7 +99,7 @@ bool UC20::powerOff() {
 	
 	pinMode(START_PIN, OUTPUT);
 	digitalWrite(START_PIN, HIGH);
-  delay(1000);
+	delay(1000);
 	digitalWrite(START_PIN, LOW);
 	delay(1000);
 	while (!_Serial->available()) {

@@ -2,15 +2,19 @@
 
 INTERNET::INTERNET(){}
 
-bool INTERNET::configure(unsigned char contextid, unsigned char context_type, String apn, String user, String password, unsigned char auth) {
-	String str = "AT+QICSGP=";
-			str += String(contextid)+",";
-			str += String(context_type)+",";
-			str += "\""+apn+"\",";
-			str	+= "\""+user+"\",";
-			str	+= "\""+password+"\",";
-			str	+= String(auth);
-	gsm.println(str);
+bool INTERNET::configure(unsigned char contextid, unsigned char context_type, String apn, String user, String password, unsigned char auth) {		
+	gsm.print(F("AT+QICSGP="));
+	gsm.print(String(contextid));
+	gsm.print(F(","));
+	gsm.print(String(context_type));
+	gsm.print(F(",\""));
+	gsm.print(apn);
+	gsm.print(F("\",\""));
+	gsm.print(user);
+	gsm.print(F("\",\""));
+	gsm.print(password);
+	gsm.print(F("\","));
+	gsm.println(String(auth));
 	return (gsm.wait_ok(10000));
 }
 
@@ -22,12 +26,14 @@ bool INTERNET::configure(String apn, String user, String password) {
 	return configure(1, 1, apn, user, password, 1);
 }
 
-bool INTERNET::configDNS(unsigned char contextid, String pridnsaddr, String secdnsaddr) {
-	String str = "AT+QIDNSCFG=";
-			str += String(contextid)+",";
-			str += "\""+pridnsaddr+"\",";
-			str += "\""+secdnsaddr+"\"";
-	gsm.println(str);
+bool INTERNET::configDNS(unsigned char contextid, String pridnsaddr, String secdnsaddr) {	
+	gsm.print(F("AT+QIDNSCFG="));
+	gsm.print(String(contextid));
+	gsm.print(F(",\""));
+	gsm.print(pridnsaddr);
+	gsm.print(F("\",\""));
+	gsm.print(secdnsaddr);
+	gsm.println(F("\""));
 	return (gsm.wait_ok(10000));
 }
 
@@ -44,9 +50,8 @@ bool INTERNET::configDNS() {
 }
 
 bool INTERNET::connect(unsigned char contextid) {
-	String 	str = "AT+QIACT=";
-			str += String(contextid);
-	gsm.println(str);
+	gsm.print(F("AT+QIACT="));
+	gsm.println(String(contextid));
 	return (gsm.wait_ok(150000));
 }
 
@@ -55,9 +60,8 @@ bool INTERNET::connect() {
 }
 
 bool INTERNET::disconnect(unsigned char contextid) {
-	String str = "AT+QIDEACT=";
-			str += String(contextid);
-	gsm.println(str);
+	gsm.print(F("AT+QIDEACT="));	
+	gsm.println(String(contextid));
 	return (gsm.wait_ok(40000));
 }
 

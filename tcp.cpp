@@ -13,21 +13,21 @@ bool TCP::Open(unsigned char contextid,unsigned char connectid,String service_ty
 	const long interval = 1000; 
 	// AT+QIOPEN=1,0,"TCP","www.settakan.com",80,0,0
 	bool ret = false;
-	gsm.print("AT+QIOPEN=");
+	gsm.print(F("AT+QIOPEN="));
 	gsm.print(String(contextid));
-	gsm.print(",");
+	gsm.print(F(","));
 	gsm.print(String(connectid));
-	gsm.print(",\"");
+	gsm.print(F(",\""));
 	gsm.print(String(service_type));
-	gsm.print("\",\"");
+	gsm.print(F("\",\""));
 	gsm.print(String(ip_url));
-	gsm.print("\",");
+	gsm.print(F("\","));
 	gsm.print(String(remote_port));
-	gsm.print(",");
+	gsm.print(F(","));
 	gsm.print(local_port);
-	gsm.print(",");
+	gsm.print(F(","));
 	gsm.print(String(access_mode));
-	gsm.println("");
+	gsm.println(F(""));
 	
 	unsigned long previousMillis = millis(); 
 	while(1)
@@ -48,33 +48,33 @@ bool TCP::Open(unsigned char contextid,unsigned char connectid,String service_ty
 			{
 				
 				ret=true;
-				gsm.debug("Connect Server Success");
+				gsm.debug(F("Connect Server Success"));
 			}
 			else
 			{
 				ret=false;
-				gsm.debug("Connect Server Fail");
+				gsm.debug(F("Connect Server Fail"));
 			}
 			return(ret);
 		}
 		 unsigned long currentMillis = millis();
 		if(currentMillis - previousMillis >= interval) 
 		{
-			gsm.print("AT+QIOPEN=");
+			gsm.print(F("AT+QIOPEN="));
 			gsm.print(String(contextid));
-			gsm.print(",");
+			gsm.print(F(","));
 			gsm.print(String(connectid));
-			gsm.print(",\"");
+			gsm.print(F(",\""));
 			gsm.print(String(service_type));
-			gsm.print("\",\"");
+			gsm.print(F("\",\""));
 			gsm.print(String(ip_url));
-			gsm.print("\",");
+			gsm.print(F("\","));
 			gsm.print(String(remote_port));
-			gsm.print(",");
+			gsm.print(F(","));
 			gsm.print(local_port);
-			gsm.print(",");
+			gsm.print(F(","));
 			gsm.print(String(access_mode));
-			gsm.println("");
+			gsm.println(F(""));
 			previousMillis = currentMillis;
 		}			
 	}
@@ -86,7 +86,7 @@ bool TCP::Open(String ip_url,String port)
 bool TCP::StartSend(unsigned char contextid)
 {
 	const long interval = 3000; 
-	gsm.print("AT+QISEND=");
+	gsm.print(F("AT+QISEND="));
 	gsm.println(String(contextid));
 	
 	unsigned long previousMillis = millis(); 
@@ -96,7 +96,7 @@ bool TCP::StartSend(unsigned char contextid)
 		{
 			if(gsm.read()=='>')
 			{
-				gsm.debug("send raedy\r\n");
+				gsm.debug(F("send raedy\r\n"));
 				return(true);
 			}	
 		}
@@ -136,12 +136,12 @@ bool TCP::StartSend(unsigned char contextid,int len)
 				buffer_ += c;
 				if(buffer_.indexOf(F("ERROR"))!=-1)
 				{
-					gsm.debug("Send Error\r\n");
+					gsm.debug(F("Send Error\r\n"));
 					return(false);
 				}
 				if(buffer_.indexOf(F("NO CARRIER"))!=-1)
 				{
-					gsm.debug("NO CARRIER\r\n");
+					gsm.debug(F("NO CARRIER\r\n"));
 					return(false);
 				}
 				
@@ -169,7 +169,7 @@ bool TCP::StartSend(unsigned char contextid,int len)
 			previousMillis = currentMillis;
 			if(flag_retry>=3)
 			{
-				gsm.debug("send error (timeout)\r\n");
+				gsm.debug(F("send error (timeout)\r\n"));
 				return(false);	
 			}
 			
@@ -225,7 +225,7 @@ bool TCP::WaitSendFinish()
 			cnt++;
 			if(cnt>3)
 			{
-				gsm.debug("Error unfinish");
+				gsm.debug(F("Error unfinish"));
 				return(false);
 			}
 			previousMillis = currentMillis; 	
@@ -275,17 +275,11 @@ int TCP::ReadBuffer(unsigned char contextid , int max_len)
 	unsigned long currentMillis ; 
 	unsigned char flag=0;  
 		
-//	gsm.print(F("AT+QIRD="));
-//	gsm.print(String(contextid));
-//	gsm.print(",");
-//	gsm.println(String(max_len));
+	gsm.print(F("AT+QIRD="));
+	gsm.print(String(contextid));
+	gsm.print(F(","));
+	gsm.println(String(max_len));
 	
-	String str = "AT+QIRD=";
-		str += String(contextid);
-		str	+= ",";
-		str	+= String(max_len);
-	gsm.debug(str);
-	gsm.println(str);
 	while(1)
 	{
 		currentMillis = millis();
@@ -322,9 +316,9 @@ int TCP::ReadBuffer(int max_len)
 }
 bool TCP::CheckConnection(unsigned char query_type , unsigned char contextid )
 {
-	gsm.print("AT+QISTATE=");
+	gsm.print(F("AT+QISTATE="));
 	gsm.print(String(query_type));
-	gsm.print(",");
+	gsm.print(F(","));
 	gsm.println(String(contextid));
 	
 	//gsm.println("AT+QISTATE=1,0");
@@ -357,7 +351,7 @@ bool TCP::CheckConnection()
 }
 bool TCP::Close(unsigned char contextid)
 {
-	gsm.print("AT+QICLOSE=");
+	gsm.print(F("AT+QICLOSE="));
 	gsm.println(String(contextid));
 	//gsm.println("AT+QICLOSE=0");
 	//while(!gsm.available()){}
@@ -383,20 +377,20 @@ bool TCP::Close()
 void TCP::Ping(unsigned char contextid,String ip_url)
 {
 	//AT+QPING=1,“www.baidu.com”
-	gsm.print("AT+QPING=");
+	gsm.print(F("AT+QPING="));
 	gsm.print(String(contextid));
-	gsm.print(",\"");
+	gsm.print(F(",\""));
 	gsm.print(ip_url);
-	gsm.println("\"");
+	gsm.println(F("\""));
 	
 }
 String TCP::NTP(unsigned char contextid,String ip_url,String port)
 {
-	gsm.print("AT+QNTP=");
+	gsm.print(F("AT+QNTP="));
 	gsm.print(String(contextid));
-	gsm.print(",\"");
+	gsm.print(F(",\""));
 	gsm.print(ip_url);
-	gsm.print("\",");
+	gsm.print(F("\","));
 	gsm.println(port);
 	const long interval = 3000; 
 	unsigned long previousMillis = millis(); 

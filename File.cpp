@@ -321,7 +321,6 @@ void UC_FILE::readFile(String pattern, String filename) {
 
 bool UC_FILE::upload(String pattern, String filename, int filesize, char* filePtr) {
 	unsigned char flag=1;
-	String retStr = "";
 	gsm.print(F("AT+QFUPL=\""));
 	if (pattern == RAM) {
 		gsm.print(F("RAM:"));
@@ -338,7 +337,7 @@ bool UC_FILE::upload(String pattern, String filename, int filesize, char* filePt
 			flag = 0;
 		}
 		if (req.indexOf(F("ERROR")) != -1) {
-			gsm.debug("error uploading file\r\n");
+			gsm.debug(F("error uploading file\r\n"));
 			return (false);
 		}
 	}
@@ -350,7 +349,7 @@ bool UC_FILE::upload(String pattern, String filename, int filesize, char* filePt
 		String req = gsm.readStringUntil('\n');	
 	   
 	    if (req.indexOf(F("+QFUPL:")) != -1) {
-			retStr = (req.substring(req.indexOf(F(" "))+1));
+			String retStr = (req.substring(req.indexOf(F(" "))+1));
 			gsm.debug(retStr);
 			gsm.debug("\r\n");
 		}
@@ -360,7 +359,7 @@ bool UC_FILE::upload(String pattern, String filename, int filesize, char* filePt
 		}
 		
 		if (req.indexOf(F("ERROR")) != -1) {
-			gsm.debug("error uploading file\r\n");
+			gsm.debug(F("error uploading file\r\n"));
 			return (false);
 		}
 		
