@@ -127,70 +127,50 @@ int HTTP::post() {
 	return (post("", 80, 80));
 }
 
-
 int HTTP::read(char *recvBuffer, unsigned int maxLen, unsigned int waitTime) {
 	bool timedOut = false;
-	char lineBuffer[maxLen+1];
-	char *bufPtr = lineBuffer;
-	char nextByte;
+	unsigned int pBuffer = 0;
 	gsm.print(F("AT+QHTTPREAD="));
 	gsm.println(String(waitTime));
 	gsm.start_time_out();
 	
-	*recvBuffer = '\0';
-	
 	while (!timedOut) {
-		bufPtr = lineBuffer;
-		nextByte = '\0';
-		do {
-			if (gsm.available()) {
-				nextByte = gsm.read();
-				if (nextByte != '\n' && nextByte != -1) {
-					*bufPtr++ = nextByte;
-					*bufPtr = '\0';		// Terminate the string always
+		String req = gsm.readStringUntil('\r\n');	
+	    //Serial.println(req);
+		if (req.indexOf(F("+QHTTPREAD: 0")) != -1) {
+			recvBuffer[pBuffer] = '\0';
+			return (pBuffer);
+		} else {
+			if ((req.indexOf(F("OK")) > 0)) {
+				// If the OK is in the response function must still return it as it is part of the message
+				if (req.length() > 1) req.concat("\r\n");
+				for (int k = 0; k < req.length(); k++) {
+					recvBuffer[pBuffer] = req.charAt(k);
+					pBuffer++;
+					if (pBuffer >= maxLen-1) {
+						// No more space in char array, abort
+						recvBuffer[pBuffer] = '\0';
+						return (-1);
+					}
+				}
+			} else if ((req.indexOf(F("OK")) == -1) && (req.indexOf(F("CONNECT")) == -1)) {
+				// Ignores modem OK and CONNECT to only return the HTTP response information
+				if (req.length() > 1) req.concat("\r\n");
+				for (int k = 0; k < req.length(); k++) {
+					recvBuffer[pBuffer] = req.charAt(k);
+					pBuffer++;
+					if (pBuffer >= maxLen-1) {
+						// No more space in char array, abort
+						recvBuffer[pBuffer] = '\0';
+						return (-1);
+					}
 				}
 			}
-			if ((bufPtr - lineBuffer) >= maxLen) {
-				// No more space in char array, abort
-				return (-1);
-			}
-			if (gsm.time_out((waitTime * 1000) + 5000)) {
-				timedOut = true;
-				gsm.debug(F("\r\nHTTP READ timeout"));
-				return (-1);
-			}
-		} while (nextByte != '\n');
-
-		if (strstr(lineBuffer, "ERROR") == lineBuffer) {
+		}
+		if (req.indexOf(F("ERROR")) != -1) {
 			return (-1);
 		}
 		
-		if (strstr(lineBuffer, "OK") == lineBuffer) {
-			lineBuffer[0] = '\0'; // Discard OK at start of response
-			bufPtr = lineBuffer; // Go back to start of lineBuffer
-			continue;
-		}
-
-		if (strstr(lineBuffer, "CONNECT") == lineBuffer) {
-			lineBuffer[0] = '\0'; // Discard CONNECT at start of response
-			bufPtr = lineBuffer; // Go back to start of lineBuffer
-			continue;
-		}
-
-//		Serial.print("->");
-//	    Serial.print(lineBuffer);
-//		Serial.println("<-");
-
-		if (strstr(lineBuffer,"+QHTTPREAD: 0") != NULL) {
-			return (strlen(recvBuffer));
-		} else {
-			if (bufPtr > lineBuffer) {
-				*bufPtr++ = '\r';
-				*bufPtr++ = '\n';
-				*bufPtr = '\0';		// Terminate the string always
-			}
-			strcat(recvBuffer,lineBuffer);
-		}
 		if (gsm.time_out((waitTime * 1000) + 5000)) {
 			timedOut = true;
 			gsm.debug(F("\r\nHTTP READ timeout"));
@@ -198,6 +178,7 @@ int HTTP::read(char *recvBuffer, unsigned int maxLen, unsigned int waitTime) {
 	}
 	return (-1);
 }
+
 
 int HTTP::read(char *recvBuffer, unsigned int maxLen) {
 	return read(recvBuffer, maxLen, 80);
