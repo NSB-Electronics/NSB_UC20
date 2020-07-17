@@ -4,7 +4,8 @@
 
 #include "NSB_UC20.h"
 
-int START_PIN = 4;
+int PWRKEY_PIN = 12;
+int RST_PIN	   = 12;
 
 unsigned long previousMillis_timeout = 0; 
 
@@ -37,30 +38,23 @@ void UC20::debug(String data) {
 }
 
 void UC20::setPowerKeyPin(int pin) {
-	START_PIN = pin;
+	PWRKEY_PIN = pin;
 }
 
-bool UC20::powerOn() {
+bool UC20::powerOn(int pwrKeyPin) {
 	//_Serial->println(F("AT"));
 	
-	pinMode(START_PIN, OUTPUT);
+	pinMode(pwrKeyPin, OUTPUT);
 	
-	digitalWrite(START_PIN, HIGH);
-	delay(1000);
-	digitalWrite(START_PIN, LOW);
-	delay(1000);
-				
-	/*
-	while(!_Serial->available())
-	{
-		delay(1);
-	}
-	start_time_out();
-	*/
+	digitalWrite(pwrKeyPin, HIGH);
+	delay(500);
+	digitalWrite(pwrKeyPin, LOW);
+	delay(500);
 	
-	unsigned long pv_out = millis(); 
+	unsigned long startTime = millis();
+	bool timedOut = false;
 	
-	while (1) {
+	while (!timedOut) {
 		if (_Serial->available()) {
 			String req = _Serial->readStringUntil('\n');	
 			// debug(req);
@@ -72,56 +66,114 @@ bool UC20::powerOn() {
 			if (req.indexOf(F("POWERED DOWN")) != -1) {
 				//start_time_out();
 				debug(F("Power OFF"));
-				pinMode(START_PIN, OUTPUT);
-				digitalWrite(START_PIN, HIGH);
-				delay(1000);
-				digitalWrite(START_PIN, LOW);
-				delay(1000);
+				pinMode(pwrKeyPin, OUTPUT);
+				digitalWrite(pwrKeyPin, HIGH);
+				delay(500);
+				digitalWrite(pwrKeyPin, LOW);
+				delay(500);
 			}				
-	  }
-	  unsigned long current_out = millis();
-			//debug("x");
-	  if (current_out - pv_out >= (10000)) {
-			digitalWrite(START_PIN, HIGH);
-			delay(1000);
-			digitalWrite(START_PIN, LOW);
-			delay(1000);
-			debug(F("Power Retry"));
-			pv_out = current_out;
 		}
-  }
+		
+		if (millis() - startTime > 10000) {
+			timedOut = true;
+			debug(F("\r\npowerOn timeout"));
+		}
+	}
 	return false;
 }
 
-bool UC20::powerOff() {
+bool UC20::powerOn() {
+	return powerOn(PWRKEY_PIN);
+}
+
+bool UC20::powerOff(boolean usePwrKey, int pwrKeyPin) {
 	
-	_Serial->println(F("AT+QPOWD"));
-	
-	pinMode(START_PIN, OUTPUT);
-	digitalWrite(START_PIN, HIGH);
-	delay(1000);
-	digitalWrite(START_PIN, LOW);
-	delay(1000);
-	while (!_Serial->available()) {
-		delay(1);
+	if (usePwrKey) {
+		pinMode(pwrKeyPin, OUTPUT);
+		digitalWrite(pwrKeyPin, HIGH);
+		delay(500);
+		digitalWrite(pwrKeyPin, LOW);
+		delay(500);
+	} else {
+		_Serial->println(F("AT+QPOWD"));
 	}
-	while (1) {
-	  String req = _Serial->readStringUntil('\n');
-	  //debug(req);		
-	  if (req.indexOf(F("RDY")) != -1) {
-			debug(F("Power ON"));
-			pinMode(START_PIN, OUTPUT);
-			digitalWrite(START_PIN, HIGH);
-			delay(1000);
-			digitalWrite(START_PIN, LOW);
-			delay(1000);
+	
+	unsigned long startTime = millis();
+	bool timedOut = false;
+	
+	while (!timedOut) {
+		if (_Serial->available()) {
+			String req = _Serial->readStringUntil('\n');
+			if (req.indexOf(F("RDY")) != -1) {
+				debug(F("Power ON"));
+				if (usePwrKey) {
+					pinMode(pwrKeyPin, OUTPUT);
+					digitalWrite(pwrKeyPin, HIGH);
+					delay(500);
+					digitalWrite(pwrKeyPin, LOW);
+					delay(500);
+				} else {
+					_Serial->println(F("AT+QPOWD"));
+				}
+			}
+			if (req.indexOf(F("POWERED DOWN")) != -1)	{
+				debug(F("Power OFF"));
+				return true;
+			}
 		}
-		if (req.indexOf(F("POWERED DOWN")) != -1)	{
-			debug(F("Power OFF"));
-			return true;
+		
+		if (millis() - startTime > 60000) {
+			timedOut = true;
+			debug(F("\r\npowerOff timeout"));
 		}
 	}
 	return false;
+}
+
+bool UC20::powerOff(boolean usePwrKey) {
+	return powerOff(usePwrKey, PWRKEY_PIN);
+}
+
+bool UC20::powerOff() {
+	return powerOff(true, PWRKEY_PIN);
+}
+
+bool UC20::hardwareReset(int rstPin) {
+	pinMode(rstPin, OUTPUT);
+	
+	digitalWrite(rstPin, HIGH);
+	delay(500);
+	digitalWrite(rstPin, LOW);
+	delay(500);
+	
+	return waitReady();
+	/*
+	unsigned long startTime = millis();
+	bool timedOut = false;
+	
+	while (!timedOut) {
+		if (_Serial->available()) {
+			String req = _Serial->readStringUntil('\n');
+			// debug(req);
+			if (req.indexOf(F("RDY")) != -1) {
+				start_time_out();
+				debug(F("\r\nModem reset and ready"));
+				return true;
+			}
+			if (req.indexOf(F("ERROR")) != -1) {
+				start_time_out();
+				debug(F("\r\nModem reset error"));
+				return false;
+			}
+		}
+		
+		if (millis() - startTime > 10000) {
+			timedOut = true;
+			debug(F("\r\npowerON timeout"));
+		}
+	}
+	return false;
+	*/
 }
 
 bool UC20::setAutoReset(uint8_t mode, uint16_t delay) {
@@ -222,19 +274,14 @@ bool UC20::waitReady() {
 	start_time_out();
 	while (!timedOut) {
 		while (_Serial->available())	{
-			String req = _Serial->readStringUntil('\n');	
+			String req = _Serial->readStringUntil('\n');
 			debug(req);
 			if (req.indexOf(F("RDY")) != -1) {
 				debug(F("\r\nUC20 Ready..."));
 				debug(F("\r\nSet Echo OFF"));
 				setEchoMode(false);
-				
 				return true;
 			}	else if (req.indexOf(F("POWERED DOWN")) != -1)	{
-				digitalWrite(START_PIN, HIGH);
-				delay(1000);
-				digitalWrite(START_PIN, LOW);
-				delay(1000);
 				powerOn();
 			}	else {
 				// Wait

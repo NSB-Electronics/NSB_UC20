@@ -66,8 +66,12 @@ public:
 	void (*Event_debug)(String data);
 	void debug(String data);
 	void setPowerKeyPin(int pin);
+	bool powerOn(int pwrKeyPin);
 	bool powerOn();
+	bool powerOff(boolean usePwrKey,int pwrKeyPin);
+	bool powerOff(boolean usePwrKey);
 	bool powerOff();
+	bool hardwareReset(int rstPin);
 	bool setAutoReset(uint8_t mode, uint16_t delay);
 	bool setAutoReset();
 	uint16_t getAutoReset();
