@@ -232,7 +232,9 @@ unsigned char SMS::checkSMSReceived(unsigned char* smsIdx) {
 		if (gsm.available()) {
 			String req = gsm.readStringUntil('\n');
 			//Serial.println(req);
-			if (req.indexOf(F("+CMGL")) != -1) {
+			if (req.indexOf(F("+CMGL=\"ALL\"")) != -1) {
+				return numSMS;
+			} else if (req.indexOf(F("+CMGL")) != -1) {
 				smsIdx[numSMS] = req.substring(req.indexOf(F(" "))+1, req.indexOf(F(","))).toInt();
 				numSMS += 1;
 			} else if (req.indexOf(F("OK")) == 0) {
