@@ -466,9 +466,8 @@ String UC20::getNetworkTimeString() {
 
 static const uint8_t monthDays[]={31,28,31,30,31,30,31,31,30,31,30,31}; // API starts months from 1, this array starts from 0
 
-time_t UC20::getNetworkTimeNumber() {
+time_t UC20::getNetworkTimeNumber(String strTime) {
 	// Excludes timezone, get it using getNetworkTimezone
-	String strTime = getNetworkTimeString();
 	
 	int idxSlash1 = strTime.indexOf(F("/"));
 	int idxSlash2 = strTime.indexOf(F("/"), idxSlash1+1);
@@ -522,9 +521,12 @@ time_t UC20::getNetworkTimeNumber() {
 	return (time_t)seconds;
 }
 
-int UC20::getNetworkTimezone() {
+time_t UC20::getNetworkTimeNumber() {
+	getNetworkTimeNumber(getNetworkTimeString());
+}
+
+int UC20::getNetworkTimezone(String strTime) {
 	String strTimezone = "";
-	String strTime = getNetworkTimeString();
 	
 	int idxComma1 = strTime.indexOf(F(","));
 	int idxComma2 = strTime.indexOf(F(","), idxComma1+1);
@@ -540,6 +542,10 @@ int UC20::getNetworkTimezone() {
 	int offset = strTimezone.toInt() * 0.25;
 	
 	return offset;
+}
+
+int UC20::getNetworkTimezone() {
+	getNetworkTimezone(getNetworkTimeString());
 }
 
 void UC20::start_time_out() {

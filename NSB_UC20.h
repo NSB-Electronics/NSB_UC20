@@ -91,7 +91,9 @@ public:
 	bool resetDefaults();
 	
 	String getNetworkTimeString();
+	time_t getNetworkTimeNumber(String strTime);
 	time_t getNetworkTimeNumber();
+	int getNetworkTimezone(String strTime);
 	int getNetworkTimezone();
 	
 	bool wait_ok_(long time,bool db);
