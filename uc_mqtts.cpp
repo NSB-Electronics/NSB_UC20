@@ -135,8 +135,8 @@ unsigned char UCxMQTTS::connectMQTTUser(String id, String user, String pass) {
 	String tmp = "0x";
 	String dat = String(buffer[0], HEX);
 	dat.toUpperCase();
-	tmp += dat;
-	tmp += " -> Connect request";
+	tmp.concat(dat);
+	tmp.concat(F(" -> Connect request"));
 	gsm.debug(tmp);
 	Serial.println(tmp);
 	
@@ -180,8 +180,8 @@ bool UCxMQTTS::disconnectMQTTUser() {
 	String tmp = "0x";
 	String dat = String(buffer[0], HEX);
 	dat.toUpperCase();
-	tmp += dat;
-	tmp += " -> Disconnect request";
+	tmp.concat(dat);
+	tmp.concat(F(" -> Disconnect request"));
 	gsm.debug(tmp);
 	Serial.println(tmp);
 	writeSSL(buffer, 2);
@@ -316,8 +316,8 @@ void UCxMQTTS::publish(char *topic, uint16_t lentopic, char *payload, uint16_t l
 	String tmp = "0x";
 	String dat = String(buffer[0], HEX);
 	dat.toUpperCase();
-	tmp += dat;
-	tmp += " -> Publish message";
+	tmp.concat(dat);
+	tmp.concat(F(" -> Publish message"));
 	gsm.debug(tmp);
 	Serial.println(tmp);
 	writeSSL(buffer, length);
@@ -383,8 +383,8 @@ void UCxMQTTS::subscribe(char *topic, uint16_t topiclen, uint8_t qos) {
 	String tmp = "0x";
 	String dat = String(buffer[0], HEX);
 	dat.toUpperCase();
-	tmp += dat;
-	tmp += " -> Subscribe request";
+	tmp.concat(dat);
+	tmp.concat(F(" -> Subscribe request"));
 	gsm.debug(tmp);
 	Serial.println(tmp);
 	writeSSL(buffer, all_len+1);
@@ -436,8 +436,8 @@ void UCxMQTTS::unsubscribe(char *topic, uint16_t topiclen) {
 	String tmp = "0x";
 	String dat = String(buffer[0], HEX);
 	dat.toUpperCase();
-	tmp += dat;
-	tmp += " -> Unsubscribe request";
+	tmp.concat(dat);
+	tmp.concat(F(" -> Unsubscribe request"));
 	gsm.debug(tmp);
 	Serial.println(tmp);
 	writeSSL(buffer, all_len);
@@ -465,11 +465,11 @@ void UCxMQTTS::ping() {
 	buffer[0] = MQTT_CTRL_PINGREQ << 4;
 	buffer[1] = 0x00;
 	
-	String tmp = "0x";
+	String tmp = F("0x");
 	String dat = String(buffer[0], HEX);
 	dat.toUpperCase();
-	tmp += dat;
-	tmp += " -> PING request";
+	tmp.concat(dat);
+	tmp.concat(F(" -> PING request"));
 	gsm.debug(tmp);
 	Serial.println(tmp);
 	writeSSL(buffer, 2);
@@ -487,7 +487,7 @@ void UCxMQTTS::mqttLoop() {
 	
 	if (ping_cnt > MAX_PING_CNT) {
 		gsm.debug(F("Max ping cnt exceeded"));		
-		Serial.println("Max ping cnt exceeded");
+		Serial.println(F("Max ping cnt exceeded"));
 		ping_cnt = 0;
 		connected = false;
 		return;
@@ -500,11 +500,11 @@ void UCxMQTTS::mqttLoop() {
 			clearBuffer();
 			return;						
 		}
-		String tmp = "0x";
+		String tmp = F("0x");
 		String dat = String(buffer[0], HEX);
 		dat.toUpperCase();
-		tmp += dat;
-		tmp += " <- ";
+		tmp.concat(dat);
+		tmp.concat(F(" <- "));
 		gsm.debug(tmp);
 		Serial.print(tmp);
 		
@@ -512,12 +512,12 @@ void UCxMQTTS::mqttLoop() {
 			case MQTT_CTRL_CONNECTACK << 4: // Connect acknowledgment
 				readDataInBufferMode(3);
 				connectReturnCode = buffer[2];
-				tmp = "Connect acknowledgment: ";
-				tmp += buffer[0]; // Remaining length
-				tmp += ",";
-				tmp += buffer[1]; // Connect Acknowledge Flags
-				tmp += ",";
-				tmp += buffer[2]; // Connect Return code
+				tmp = F("Connect acknowledgment: ");
+				tmp.concat(buffer[0]); // Remaining length
+				tmp.concat(",");
+				tmp.concat(buffer[1]); // Connect Acknowledge Flags
+				tmp.concat(",");
+				tmp.concat(buffer[2]); // Connect Return code
 				gsm.debug(tmp);
 				Serial.println(tmp);
 				connectAck = true;
@@ -525,51 +525,51 @@ void UCxMQTTS::mqttLoop() {
 				break;
 			case MQTT_CTRL_PUBLISH << 4: // Publish message
 				gsm.debug(F("Publish message"));
-				Serial.println("Publish message");
+				Serial.println(F("Publish message"));
 				checkRXsub();
 				previousMillis_ping = millis(); // No need to ping now
 				return;
 				break;
 			case MQTT_CTRL_PUBACK << 4: // Publish acknowledgment
 				gsm.debug(F("Publish acknowledgment"));
-				Serial.println("Publish acknowledgment");
+				Serial.println(F("Publish acknowledgment"));
 				previousMillis_ping = millis(); // No need to ping now
 				break;
 			case MQTT_CTRL_PUBREC << 4: // Publish received (assured delivery part 1)
 				gsm.debug(F("Publish received (assured delivery part 1)"));
-				Serial.println("Publish received (assured delivery part 1)");
+				Serial.println(F("Publish received (assured delivery part 1)"));
 				previousMillis_ping = millis(); // No need to ping now
 				return;
 				break;
 			case MQTT_CTRL_PUBREL << 4: // Publish release (assured delivery part 2)
 				gsm.debug(F("Publish release (assured delivery part 2)"));
-				Serial.println("Publish release (assured delivery part 2)");
+				Serial.println(F("Publish release (assured delivery part 2)"));
 				previousMillis_ping = millis(); // No need to ping now
 				return;
 				break;
 			case MQTT_CTRL_PUBCOMP << 4: // Publish complete (assured delivery part 3)
 				gsm.debug(F("Publish complete (assured delivery part 3)"));
-				Serial.println("Publish complete (assured delivery part 3)");
+				Serial.println(F("Publish complete (assured delivery part 3)"));
 				previousMillis_ping = millis(); // No need to ping now
 				return;
 				break;
 			case 0x32: // rx_sub + retain
 				gsm.debug(F("Publish message with retain"));
-				Serial.println("Publish message with retain");
+				Serial.println(F("Publish message with retain"));
 				checkRXsub();
 				previousMillis_ping = millis(); // No need to ping now
 				return;
 				break;
 			case MQTT_CTRL_SUBACK << 4: // Subscribe acknowledgment
 				readDataInBufferMode(4);
-				tmp = "Subscribe acknowledgment: ";
-				tmp += buffer[0]; // Remaining length
-				tmp += ",";
-				tmp += buffer[1]; // Packet identifier MSB
-				tmp += ",";
-				tmp += buffer[2]; // Packet identifier LSB
-				tmp += ",";
-				tmp += buffer[3]; // Return code
+				tmp = F("Subscribe acknowledgment: ");
+				tmp.concat(buffer[0]); // Remaining length
+				tmp.concat(",");
+				tmp.concat(buffer[1]); // Packet identifier MSB
+				tmp.concat(",");
+				tmp.concat(buffer[2]); // Packet identifier LSB
+				tmp.concat(",");
+				tmp.concat(buffer[3]); // Return code
 				gsm.debug(tmp);
 				Serial.println(tmp);
 				previousMillis_ping = millis(); // No need to ping now
@@ -577,12 +577,12 @@ void UCxMQTTS::mqttLoop() {
 			  break;
 			case MQTT_CTRL_UNSUBACK << 4: // Unsubscribe acknowledgment
 				readDataInBufferMode(3);
-				tmp = "Unsubscribe acknowledgment: ";
-				tmp += buffer[0]; // Remaining length
-				tmp += ",";
-				tmp += buffer[1]; // Packet identifier MSB
-				tmp += ",";
-				tmp += buffer[2]; // Packet identifier LSB
+				tmp = F("Unsubscribe acknowledgment: ");
+				tmp.concat(buffer[0]); // Remaining length
+				tmp.concat(",");
+				tmp.concat(buffer[1]); // Packet identifier MSB
+				tmp.concat(",");
+				tmp.concat(buffer[2]); // Packet identifier LSB
 				gsm.debug(tmp);
 				Serial.println(tmp);
 				previousMillis_ping = millis(); // No need to ping now
@@ -592,8 +592,8 @@ void UCxMQTTS::mqttLoop() {
 				
 				ping_cnt = 0;
 				readDataInBufferMode(1);
-				tmp = "PING response: ";
-				tmp += buffer[0]; // Remaining length
+				tmp = F("PING response: ");
+				tmp.concat(buffer[0]); // Remaining length
 				gsm.debug(tmp);
 				Serial.println(tmp);
 				if(buffer[0] == 0x00) {
@@ -610,7 +610,7 @@ void UCxMQTTS::mqttLoop() {
 				break;
 			default:
 				gsm.debug(F("Unknown Control Packet Type, clearing buffers?"));
-				Serial.println("Unknown Control Packet Type, clearing buffers?");
+				Serial.println(F("Unknown Control Packet Type, clearing buffers?"));
 				clearBuffer();
 				//gsm.flush(); // ?? Is this best or not??
 				return;
