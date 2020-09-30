@@ -28,11 +28,20 @@
 #define EVENT_EMAIL		5
 #define EVENT_SSLURC	6
 #define EVENT_USD		7
+#define EVENT_SIM_ERR	8
+#define EVENT_URC_DEACT	9
 
 
 #define UFS 	"UFS"
 #define RAM 	"RAM"
 #define COM 	"COM"
+
+#define NETWORK_NONE 	0
+#define NETWORK_HOME	1
+#define NETWORK_SEARCH	2
+#define NETWORK_DENIED	3
+#define NETWORK_UNKNOWN	4
+#define NETWORK_ROAMING	5
 
 #define RESET_DISABLE 	0
 #define RESET_ONETIME	1
@@ -71,6 +80,8 @@ public:
 	bool powerOff(boolean usePwrKey,int pwrKeyPin);
 	bool powerOff(boolean usePwrKey);
 	bool powerOff();
+	bool powerSIMOff();
+	bool powerSIMOn();
 	bool hardwareReset(int rstPin);
 	bool setAutoReset(uint8_t mode, uint16_t delay);
 	bool setAutoReset();
@@ -78,6 +89,8 @@ public:
 	bool waitSIMReady();
 	String getSIMStatus();
 	String getIMEI();
+	String getIMSI();
+	String getICCID();
 	bool waitOK();
 	bool waitReady();
 	bool setEchoMode(bool echo);

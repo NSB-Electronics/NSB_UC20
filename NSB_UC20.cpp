@@ -138,6 +138,16 @@ bool UC20::powerOff() {
 	return powerOff(true, PWRKEY_PIN);
 }
 
+bool UC20::powerSIMOff() {
+	_Serial->println(F("AT+CFUN=5"));
+	return wait_ok(1000);
+}
+
+bool UC20::powerSIMOn() {
+	_Serial->println(F("AT+CFUN=6"));
+	return wait_ok(1000);
+}
+
 bool UC20::hardwareReset(int rstPin) {
 	pinMode(rstPin, OUTPUT);
 	
@@ -247,9 +257,11 @@ String UC20::getSIMStatus() {
 }
 
 String UC20::getIMEI() {
+	bool timedOut = false;
 	_Serial->println(F("AT+GSN"));
 	delay(300);
-	while (1) {
+	unsigned long startTime = millis();
+	while (!timedOut) {
 		if (_Serial->available()) {
 			String req = _Serial->readStringUntil('\n');
 			if (req.length() > 3) {
@@ -258,6 +270,55 @@ String UC20::getIMEI() {
 			} else {
 				// Ignore empty lines and OKs
 			}
+		}
+		if (millis() - startTime > (1000)) {
+			timedOut = true;
+		}
+	}
+	
+	return F("");
+}
+
+String UC20::getIMSI() {
+	bool timedOut = false;
+	_Serial->println(F("AT+CIMI"));
+	delay(300);
+	unsigned long startTime = millis();
+	while (!timedOut) {
+		if (_Serial->available()) {
+			String req = _Serial->readStringUntil('\n');
+			if (req.length() > 3) {
+				wait_ok_ndb(1000); // Flush OK
+				return req.substring(0, req.indexOf(F("\r")));
+			} else {
+				// Ignore empty lines and OKs
+			}
+		}
+		if (millis() - startTime > (1000)) {
+			timedOut = true;
+		}
+	}
+	
+	return F("");
+}
+
+String UC20::getICCID() {
+	bool timedOut = false;
+	_Serial->println(F("AT+QCCID"));
+	delay(300);
+	unsigned long startTime = millis();
+	while (!timedOut) {
+		if (_Serial->available()) {
+			String req = _Serial->readStringUntil('\n');
+			if (req.length() > 8) {
+				wait_ok_ndb(1000); // Flush OK
+				return req.substring(8, req.indexOf(F("\r")));
+			} else {
+				// Ignore empty lines and OKs
+			}
+		}
+		if (millis() - startTime > (1000)) {
+			timedOut = true;
 		}
 	}
 	
@@ -328,7 +389,7 @@ bool UC20::waitNetworkRegistered() {
 	unsigned long startTime = millis();
 	while (!timedOut) {
 		status = getNetworkStatus();
-		if (status == 1) {
+		if ((status == NETWORK_HOME) || (status == NETWORK_ROAMING)) {
 			debug(F("\r\nNetwork registered"));
 			return true;
 		}	else {
@@ -580,8 +641,9 @@ bool UC20::wait_ok_(long time, bool ack) {
 			return (1);
 		}
 		if (req.indexOf(F("ERROR")) != -1) {
-			if(ack)
-			debug(F("Error"));
+			if (ack) {
+				debug(F("Error"));
+			}
 			return (0);
 		}
 		//debug(req);	
@@ -624,11 +686,19 @@ unsigned char UC20::eventInput() {
 			return (eventType);
 		} else if (req.indexOf(F("+QSSLURC")) != -1) {
 			eventType = EVENT_SSLURC;
-			Serial.println(req);
+			//Serial.println(req);
 			return (eventType);
 		} else if (req.indexOf(F("+CUSD")) != -1) {
 			eventType = EVENT_USD;
-			Serial.println(req);
+			//Serial.println(req);
+			return (eventType);
+		} else if (req.indexOf(F("+CPIN: NOT READY")) != -1) {
+			eventType = EVENT_SIM_ERR;
+			//Serial.println(req);
+			return (eventType);
+		} else if (req.indexOf(F("+QIURC: \"pdpdeact\"")) != -1) {
+			eventType = EVENT_URC_DEACT;
+			//Serial.println(req);
 			return (eventType);
 		} else if (req.indexOf(F("OK")) == 0) {
 			eventType = EVENT_OK;
