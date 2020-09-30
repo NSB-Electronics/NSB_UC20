@@ -153,11 +153,11 @@ int SMTP::stopBody(unsigned int inputTime) {
 	String req;
 	int bodyLength = 0;
 	
-	delay(2000); // Otherwise +++ is misinterpreted as data
+	delay(1100); // Otherwise +++ is misinterpreted as data
 	gsm.print(F("+++")); // Send end input
-	delay(1000);
+	delay(1100);
 	
-	while (!gsm.available()) {}
+	//while (!gsm.available()) {}
 	gsm.start_time_out();
 	
 	while(!timedOut) {
