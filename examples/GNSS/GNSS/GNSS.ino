@@ -20,18 +20,18 @@ void setup()
   gsm.begin(&mySerial,9600);
   gsm.Event_debug = debug;
   Serial.println(F("UC20"));
-  gsm.PowerOn(); 
+  gsm.powerOn(); 
   while(gsm.WaitReady()){}
   Serial.print(F("GetOperator --> "));
   Serial.println(gsm.GetOperator());
   Serial.print(F("SignalQuality --> "));
   Serial.println(gsm.SignalQuality());
-  gps.Start();
+  gps.start();
   Serial.print(F("GPS Start"));
 }
 
 void loop() 
 {
-  Serial.println(gps.GetPosition());
+  Serial.println(gps.getPosition());
   delay(500);   
 }

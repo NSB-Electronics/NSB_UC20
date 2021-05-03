@@ -33,7 +33,7 @@ bool TCP::Open(unsigned char contextid,unsigned char connectid,String service_ty
 	while(1)
 	{
 		String req = gsm.readStringUntil('\n');
-		gsm.debug(req);
+		//DEBUG_PRINTLN(req);
 		if(req.indexOf(F("OK"))!= -1)
 			ret=true;
 		if(req.indexOf(F("+QIOPEN:"))!= -1)
@@ -48,12 +48,12 @@ bool TCP::Open(unsigned char contextid,unsigned char connectid,String service_ty
 			{
 				
 				ret=true;
-				gsm.debug(F("Connect Server Success"));
+				DEBUG_PRINTLN(F("\t---- TCP Open Connect Server Success"));
 			}
 			else
 			{
 				ret=false;
-				gsm.debug(F("Connect Server Fail"));
+				DEBUG_PRINTLN(F("\t---- TCP Open Connect Server Fail"));
 			}
 			return(ret);
 		}
@@ -96,7 +96,7 @@ bool TCP::StartSend(unsigned char contextid)
 		{
 			if(gsm.read()=='>')
 			{
-				gsm.debug(F("send raedy\r\n"));
+				//DEBUG_PRINTLN(F("\t----send ready"));
 				return(true);
 			}	
 		}
@@ -128,7 +128,7 @@ bool TCP::StartSend(unsigned char contextid,int len)
 			//Serial.write(c);
 			if(c =='>')
 			{
-				//gsm.debug("send ready");
+				//DEBUG_PRINTLN("send ready");
 				return(true);
 			}	
 			else
@@ -136,12 +136,12 @@ bool TCP::StartSend(unsigned char contextid,int len)
 				buffer_ += c;
 				if(buffer_.indexOf(F("ERROR"))!=-1)
 				{
-					gsm.debug(F("Send Error\r\n"));
+					DEBUG_PRINTLN(F("\t---- TCP StartSend Error"));
 					return(false);
 				}
 				if(buffer_.indexOf(F("NO CARRIER"))!=-1)
 				{
-					gsm.debug(F("NO CARRIER\r\n"));
+					DEBUG_PRINTLN(F("\t---- TCP StartSend NO CARRIER"));
 					return(false);
 				}
 				
@@ -149,7 +149,7 @@ bool TCP::StartSend(unsigned char contextid,int len)
 			}
 		/*	if(c =='E')
 			{
-				gsm.debug("send fail");
+				DEBUG_PRINTLN("send fail");
 				return(false);
 			}
 */			
@@ -160,7 +160,7 @@ bool TCP::StartSend(unsigned char contextid,int len)
 			
 			flag_retry++;
 			gsm.println(F("AT"));
-			gsm.wait_ok_ndb(1000);
+			gsm.waitOK(1000);
 			gsm.print(F("AT+QISEND="));
 			gsm.print(String(contextid));
 			gsm.print(",");
@@ -169,7 +169,7 @@ bool TCP::StartSend(unsigned char contextid,int len)
 			previousMillis = currentMillis;
 			if(flag_retry>=3)
 			{
-				gsm.debug(F("send error (timeout)\r\n"));
+				DEBUG_PRINTLN(F("\t---- TCP StartSend Timeout"));
 				return(false);	
 			}
 			
@@ -225,7 +225,7 @@ bool TCP::WaitSendFinish()
 			cnt++;
 			if(cnt>3)
 			{
-				gsm.debug(F("Error unfinish"));
+				DEBUG_PRINTLN(F("\t---- TCP WaitSendFinish Error unfinish"));
 				return(false);
 			}
 			previousMillis = currentMillis; 	
@@ -233,19 +233,20 @@ bool TCP::WaitSendFinish()
 		if(gsm.available())
 		{
 			String req = gsm.readStringUntil('\n');
-			//gsm.debug(req);
+			//DEBUG_PRINTLN(req);
 			if(req.indexOf(F("SEND OK"))!= -1)
 			{		
 				return(true);	
 			}
 			if(req.indexOf(F("SEND FAIL"))!= -1)
 			{		
-				gsm.debug(req);
+				//DEBUG_PRINTLN(req);
 				return(false);	
 			}
 		}
 			
 	}
+	return(false);
 }
 bool TCP::ReceiveAvailable()
 {
@@ -263,6 +264,7 @@ bool TCP::ReceiveAvailable()
 			return(false);
 		}
 	}
+	return(false);
 }
 int TCP::ReadBuffer()
 {
@@ -309,6 +311,7 @@ int TCP::ReadBuffer(unsigned char contextid , int max_len)
 			previousMillis = millis(); 
 		}
 	}
+	return(0);
 }
 int TCP::ReadBuffer(int max_len)
 {
@@ -328,7 +331,7 @@ bool TCP::CheckConnection(unsigned char query_type , unsigned char contextid )
 		if(gsm.available())
 		{
 			String req = gsm.readStringUntil('\n');
-			gsm.debug(req);
+			//DEBUG_PRINTLN(req);
 			if(req.indexOf(F("+QISTATE:"))!= -1)
 			{
 				flag+=5;
@@ -343,6 +346,7 @@ bool TCP::CheckConnection(unsigned char query_type , unsigned char contextid )
 				return(false);
 		}
 	}
+	return(false);
 }
 
 bool TCP::CheckConnection()
@@ -368,7 +372,7 @@ bool TCP::Close(unsigned char contextid)
 				return(false);
 			}
 	}
-	
+	return(false);
 }
 bool TCP::Close()
 {
@@ -411,6 +415,7 @@ String TCP::NTP(unsigned char contextid,String ip_url,String port)
 			return("");
 		}			
 	}
+	return("");
 }
 //AT+QNTP=1,"time.navy.mi.th",123
 //AT+QNTP=1,"203.185.67.115",123

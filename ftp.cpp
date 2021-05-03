@@ -15,7 +15,7 @@ bool FTP:: begin(unsigned char context_ID)
 	gsm.print(F("AT+QFTPCFG=\"contextid\","));
 	gsm.print(context_ID,DEC);
 	gsm.println("");
-	return(gsm.wait_ok(3000));
+	return(gsm.waitOK(3000));
 }
 bool FTP::SetUsernamePassword(String user,String pass)
 {
@@ -25,7 +25,7 @@ bool FTP::SetUsernamePassword(String user,String pass)
 	gsm.print(F("\",\""));
 	gsm.print(pass);
 	gsm.println(F("\""));
-	return(gsm.wait_ok(3000));
+	return(gsm.waitOK(3000));
 }
 bool FTP::SetFileType(unsigned char type)
 {
@@ -33,21 +33,21 @@ bool FTP::SetFileType(unsigned char type)
 	gsm.print(F("AT+QFTPCFG=\"filetype\","));
 	gsm.print(type,DEC);
 	gsm.println("");
-	return(gsm.wait_ok(3000));
+	return(gsm.waitOK(3000));
 }
 bool FTP::SetTransMode(unsigned char type)
 {
 	gsm.print(F("AT+QFTPCFG=\"transmode\","));
 	gsm.print(type,DEC);
 	gsm.println("");
-	return(gsm.wait_ok(3000));
+	return(gsm.waitOK(3000));
 }
 bool FTP::SetTimeout(int t)
 {
 	gsm.print(F("AT+QFTPCFG=\"rsptimeout\","));
 	gsm.print(t,DEC);
 	gsm.println("");
-	return(gsm.wait_ok(3000));
+	return(gsm.waitOK(3000));
 }
 int FTP:: LoginServer(String serv,int port)
 {
@@ -59,12 +59,12 @@ int FTP:: LoginServer(String serv,int port)
 	gsm.println("");
 	while(!gsm.available())
 	{}
-	gsm.start_time_out();
+	unsigned long timeout = millis();
 	
 	while(1)
 	{
 		String req = gsm.readStringUntil('\n');	
-	    gsm.debug(req);
+	    //DEBUG_PRINTLN(req);
 		if(req.indexOf(F("+QFTPOPEN:")) != -1)
 		{
 			char index1 = req.indexOf(F(","));
@@ -73,29 +73,34 @@ int FTP:: LoginServer(String serv,int port)
 		if(req.indexOf(F("ERROR")) != -1)
 		{
 			return(-1);
-		}		
+		}
+		
+		if (millis() - timeout > 3000) {
+			return (-1);
+		}
 	}			
-	
+	return(-1);
 }
 int FTP :: SSLEnable()
 {
 	int res = 0;
 	//AT+QFTPCFG="ssltype",1
 	gsm.println(F("AT+QFTPCFG=\"ssltype\",1"));
-	res = gsm.wait_ok(3000);
+	res = gsm.waitOK(3000);
 	//AT+QFTPCFG="sslctxid",1   
 	gsm.println(F("AT+QFTPCFG=\"sslctxid\",1"));
-	res = gsm.wait_ok(3000);
+	res = gsm.waitOK(3000);
 	//AT+QSSLCFG=“ciphersuite”,1, 0xffff 
 	gsm.println(F("AT+QSSLCFG=\"ciphersuite\",1, 0xffff"));
-	res = gsm.wait_ok(3000);
+	res = gsm.waitOK(3000);
 	//AT+QSSLCFG=“seclevel”,1,0 
 	gsm.println(F("AT+QSSLCFG=\"seclevel\",1,0"));
-	res = gsm.wait_ok(3000);
+	res = gsm.waitOK(3000);
 	//AT+QSSLCFG=“sslversion”,1,1 
 	delay(1000);
 	gsm.println(F("AT+QSSLCFG=\"sslversion\",1,1"));  
-	res = gsm.wait_ok(3000);
+	res = gsm.waitOK(3000);
+	return(res);
 	
 }
 int FTP :: Logout()
@@ -104,12 +109,12 @@ int FTP :: Logout()
 	gsm.println(F("AT+QFTPCLOSE"));
 	while(!gsm.available())
 	{}
-	gsm.start_time_out();
+	unsigned long timeout = millis();
 	
 	while(1)
 	{
 		String req = gsm.readStringUntil('\n');	
-	    gsm.debug(req);
+	    //DEBUG_PRINTLN(req);
 		if(req.indexOf(F("+QFTPCLOSE:")) != -1)
 		{
 			char index1 = req.indexOf(F(","));
@@ -119,7 +124,12 @@ int FTP :: Logout()
 		{
 			return(-1);
 		}		
-	}			
+		
+		if (millis() - timeout > 3000) {
+			return (-1);
+		}
+	}
+	return(-1);	
 }
 
 int  FTP :: SetPath(String path)
@@ -129,12 +139,12 @@ int  FTP :: SetPath(String path)
 	gsm.println(F("\""));
 	while(!gsm.available())
 	{}
-	gsm.start_time_out();
+	unsigned long timeout = millis();
 	
 	while(1)
 	{
 		String req = gsm.readStringUntil('\n');	
-	    gsm.debug(req);
+	    //DEBUG_PRINTLN(req);
 		if(req.indexOf(F("+QFTPCWD:")) != -1)
 		{
 			char index1 = req.indexOf(F(","));
@@ -143,8 +153,13 @@ int  FTP :: SetPath(String path)
 		if(req.indexOf(F("ERROR")) != -1)
 		{
 			return(-1);
-		}		
+		}
+		
+		if (millis() - timeout > 3000) {
+			return (-1);
+		}
 	}
+	return(-1);
 }
 
 bool FTP :: List(String path)
@@ -155,12 +170,12 @@ bool FTP :: List(String path)
 	gsm.println(F("\",\"COM:\"")); 
 	while(!gsm.available())
 	{}
-	gsm.start_time_out();
+	unsigned long timeout = millis();
 	
 	while(1)
 	{
 		String req = gsm.readStringUntil('\n');	
-	    //gsm.debug(req);
+	    //DEBUG_PRINTLN(req);
 		(*ListOutput)(req);
 		if(req.indexOf(F("CONNECT")) != -1)
 		{
@@ -174,8 +189,13 @@ bool FTP :: List(String path)
 		if(req.indexOf(F("+QFTPLIST:")) != -1)
 		{
 			return(true);
-		}				
-	} 	
+		}
+		
+		if (millis() - timeout > 10000) {
+			return (-1);
+		}
+	}
+	return(false);
 }
 int FTP :: ListToMemory(String path,String pattern,String fn)
 {
@@ -194,12 +214,12 @@ int FTP :: ListToMemory(String path,String pattern,String fn)
 	gsm.println(F("\""));
 	while(!gsm.available())
 	{}
-	gsm.start_time_out();
+	unsigned long timeout = millis();
 	
 	while(1)
 	{
 		String req = gsm.readStringUntil('\n');	
-		gsm.debug(req);
+		//DEBUG_PRINTLN(req);
 		if(req.indexOf(F("+QFTPLIST:")) != -1)
 		{
 			char index1 = req.indexOf(F(","));
@@ -208,9 +228,13 @@ int FTP :: ListToMemory(String path,String pattern,String fn)
 		if(req.indexOf(F("ERROR")) != -1)
 		{
 			return(-1);
-		}				
+		}
+		
+		if (millis() - timeout > 10000) {
+			return (-1);
+		}
 	}
-	
+	return(-1);
 }
 int FTP:: MakeFolder(String name)
 {
@@ -253,12 +277,12 @@ int FTP:: proc_rx_cmd(String match)
 {
 	while(!gsm.available())
 	{}
-	gsm.start_time_out();
+	unsigned long timeout = millis();
 	
 	while(1)
 	{
 		String req = gsm.readStringUntil('\n');	
-		//gsm.debug(req);
+		//DEBUG_PRINTLN(req);
 		if(req.indexOf(match) != -1)
 		{
 			char index1 = req.indexOf(F(","));
@@ -267,12 +291,17 @@ int FTP:: proc_rx_cmd(String match)
 		if(req.indexOf(F("ERROR")) != -1)
 		{
 			return(-1);
-		}				
+		}
+		
+		if (millis() - timeout > 3000) {
+			return (-1);
+		}
 	}
+	return(-1);
 }
 int FTP:: put(String File,String pattern,String fn,int startpos)
 {
-	put(File,pattern,fn,startpos,0,0xFF);
+	return put(File,pattern,fn,startpos,0,0xFF);
 }
 
 
@@ -320,6 +349,7 @@ int FTP:: put(String File,String pattern,String fn,int startpos,int uploadlen,in
 	{
 		WaitFinish();
 	}
+	return(0);
 }
 int FTP:: WaitFinish()
 { 
@@ -330,12 +360,12 @@ int FTP:: proc_rx_cmd2(String match)
 {
 	while(!gsm.available())
 	{}
-	gsm.start_time_out();
+	unsigned long timeout = millis();
 	
 	while(1)
 	{
 		String req = gsm.readStringUntil('\n');	
-		//gsm.debug(req);
+		//DEBUG_PRINTLN(req);
 		if(req.indexOf(match) != -1)
 		{
 			return(1);
@@ -343,17 +373,22 @@ int FTP:: proc_rx_cmd2(String match)
 		if(req.indexOf(F("ERROR")) != -1)
 		{
 			return(0);
-		}				
+		}
+		
+		if (millis() - timeout > 3000) {
+			return (-1);
+		}
 	}
+	return(0);
 }
 int  FTP::get(String File,int startpos)
 {
-	 get(File,COM,"",startpos,-1);
+	 return get(File,COM,"",startpos,-1);
 }
 
 int  FTP::get(String File,String pattern,String fn)
 {
-	 get(File,pattern,fn,-1,-1);
+	 return get(File,pattern,fn,-1,-1);
 }
 
 int FTP:: get(String File,String pattern,String fn,int startpos,int downloadlen)
@@ -400,6 +435,8 @@ int FTP:: get(String File,String pattern,String fn,int startpos,int downloadlen)
 	{
 		proc_rx_cmd2(F("+QFTPGET"));
 	}
+	
+	return(0);
 		
 	/*	
 		while(!gsm.available())
@@ -424,7 +461,7 @@ int FTP:: get(String File,String pattern,String fn,int startpos,int downloadlen)
 			}		
 			else
 			{
-				//gsm.debug(req);
+				//DEBUG_PRINTLN(req);
 				(*GetOutput)(req);
 			}				
 		}
@@ -443,7 +480,7 @@ bool FTP :: WaitFtpFinish()
 				int resp = req.substring(index1+1,index2).toInt();
 				if(resp==0)
 				{
-					gsm.debug(req);
+					DEBUG_PRINTLN(req);
 				}
 				return(false);
 		}	
@@ -468,7 +505,7 @@ bool FTP :: Read_get()
 				while(flag_out)
 				{
 					String req = gsm.readStringUntil('\n');	
-					//gsm.debug(req);
+					//DEBUG_PRINTLN(req);
 					//flag_out=0;
 					if(req.indexOf(F("+QFTPGET:")) != -1)
 					{
@@ -483,32 +520,3 @@ bool FTP :: Read_get()
   return(true);
  
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

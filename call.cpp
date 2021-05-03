@@ -13,30 +13,30 @@ unsigned char CALL:: Call(String call_number)  /* return 	0 =	Timeout
 	gsm.println(F(";"));
 	while(!gsm.available())
 	{}
-	gsm.start_time_out();
+	unsigned long timeout = millis();
 	while(1)
 	{
 		String req = gsm.readStringUntil('\n');	
 	    if(req.indexOf(F("OK")) != -1)
 		{
-			gsm.debug(F("OK"));
+			//DEBUG_PRINTLN(F("OK"));
 			return(1);
 		}
 			
 		if(req.indexOf(F("NO CARRIER")) != -1)
 		{
-			gsm.debug(F("NO CARRIER"));
+			DEBUG_PRINTLN(F("\t---- CALL NO CARRIER"));
 			return(2);
 		}
 		if(req.indexOf(F("BUSY")) != -1)
 		{
-			gsm.debug(F("BUSY"));
+			DEBUG_PRINTLN(F("\t---- CALL BUSY"));
 			return(2);
 		}
 			
-		if(gsm.time_out(10000))
+		if(millis() - timeout > 10000)
 		{
-			gsm.debug(F("Error"));
+			DEBUG_PRINTLN(F("\t---- CALL Time out Error"));
 			return(0);
 		}
 	}
@@ -46,24 +46,24 @@ unsigned char CALL:: Call(String call_number)  /* return 	0 =	Timeout
 bool CALL:: Answer()
 {
 	gsm.println(F("ATA"));
-	return(gsm.wait_ok(3000));
+	return(gsm.waitOK(3000));
 }
 bool CALL:: DisconnectExisting()
 {
 	gsm.println(F("ATH"));
-	return(gsm.wait_ok(3000));
+	return(gsm.waitOK(3000));
 }
 bool CALL:: HangUp()
 {
 	gsm.println(F("AT+CHUP"));
-	return(gsm.wait_ok(3000));
+	return(gsm.waitOK(3000));
 }
 String CALL:: CurrentCallsMe()
 {
 	gsm.println(F("AT+CLCC"));
 	while(!gsm.available())
 	{}
-	gsm.start_time_out();
+	unsigned long timeout = millis();
 	while(1)
 	{
 		String req = gsm.readStringUntil('\n');	
@@ -76,7 +76,7 @@ String CALL:: CurrentCallsMe()
 			//Serial.println("req");
 			return(req);
 		}
-		if(gsm.time_out(20000))
+		if(millis() - timeout > 20000)
 		{
 			return(F("CurrentCallsMe Timeout"));
 		}

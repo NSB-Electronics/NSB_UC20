@@ -9,22 +9,27 @@ UCxMQTTS::UCxMQTTS() {
 	callback = func_null_mqtts;
 }
 
-bool UCxMQTTS::connectMQTTServer(unsigned char pdpid, unsigned char contextid, unsigned char clientid, String web, String port, unsigned char mode) {
-	connected = ssl_mqtts.open(pdpid, contextid, clientid, web, port, mode); //buffer mode	
+bool UCxMQTTS::connectMQTTServer(uint8_t pdpid, uint8_t contextid, uint8_t clientid, char *serverAddr, uint16_t port, uint8_t accessMode) {
+	uint16_t errorCode = ssl_mqtts.open(pdpid, contextid, clientid, serverAddr, port, accessMode); //buffer mode	
+	if (errorCode == 0) {
+		connected = true;
+	} else {
+		connected = false;
+	}
 	return (connected);
 }
 
-bool UCxMQTTS::connectMQTTServer(unsigned char contextid, String web, String port) {
-	connected = connectMQTTServer(1, contextid, 0, web, port, 0);
+bool UCxMQTTS::connectMQTTServer(uint8_t contextid, char *serverAddr, uint16_t port) {
+	connected = connectMQTTServer(1, contextid, 0, serverAddr, port, 0);
 	return (connected);
 }
 
-bool UCxMQTTS::connectMQTTServer(String web, String port) {
-	connected = connectMQTTServer(1, 1, 0, web, port, 0);
+bool UCxMQTTS::connectMQTTServer(char *serverAddr, uint16_t port) {
+	connected = connectMQTTServer(1, 1, 0, serverAddr, port, 0);
 	return (connected);
 }
 
-bool UCxMQTTS::disconnectMQTTServer(unsigned char clientid) {
+bool UCxMQTTS::disconnectMQTTServer(uint8_t clientid) {
 	connected = false;
 	return (ssl_mqtts.close(clientid));
 }
@@ -35,7 +40,7 @@ bool UCxMQTTS::disconnectMQTTServer() {
 
 // The current MQTT spec is 3.1.1 and available here:
 //   http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718028
-unsigned char UCxMQTTS::connectMQTTUser(String id, String user, String pass) {
+unsigned char UCxMQTTS::connectMQTTUser(char *id, char *user, char *pass) {
 	
 	// Leave room in the buffer for header and variable length field
 	uint32_t length = 0;		// Total length of the mqtt data (excludes fixed header)
@@ -45,15 +50,15 @@ unsigned char UCxMQTTS::connectMQTTUser(String id, String user, String pass) {
 	uint8_t variableHeaderLen = 10; // Always 10 for a CONNECT packet
 	uint8_t connectFlags = MQTT_CONN_CLEANSESSION;	// Always clean the session
 	
-	payloadLen = id.length() + user.length() + pass.length();
-	if (id.length() > 0) {
+	payloadLen = strlen(id) + strlen(user) + strlen(pass);
+	if (strlen(id) > 0) {
 		payloadLen += 2;
 	}
-	if (user.length() > 0) {
+	if (strlen(user) > 0) {
 		payloadLen += 2;
 		connectFlags |= MQTT_CONN_USERNAMEFLAG;
 	}
-	if (pass.length() > 0) {
+	if (strlen(pass) > 0) {
 		payloadLen += 2;
 		connectFlags |= MQTT_CONN_PASSWORDFLAG;
 	}
@@ -88,57 +93,53 @@ unsigned char UCxMQTTS::connectMQTTUser(String id, String user, String pass) {
 	
 	length += 10;
 	
-	unsigned char len = id.length();
+	unsigned char len = strlen(id);
 	buffer[length] = (len >> 8) & 0x00FF; // clientid length MSB
 	buffer[length+1] = len & 0x00FF;      // clientid length LSB
 	length += 2;
 	
 	for (byte k = 0; k < len; k++) {
-		buffer[length] = id[k];
+		buffer[length] = *id++;
 		length++;
 		if (length >= MQTT_MAX_PACKET_SIZE) {
-			Serial.println(F("MQTT_MAX_PACKET_SIZE exceeded"));
+			DEBUG_PRINTLN(F("MQTT_MAX_PACKET_SIZE exceeded"));
 			return (0xFF);
 		}
 	}
 
-	len = user.length();
+	len = strlen(user);
 	buffer[length] = (len >> 8) & 0x00FF; // username length MSB
 	length++;
 	buffer[length] = len & 0x00FF;        // username length LSB
 	length++;
 	for (byte k = 0; k < len; k++) {
-		buffer[length] = user[k];
+		buffer[length] = *user++;
 		length++;
 		if (length >= MQTT_MAX_PACKET_SIZE) {
-			Serial.println(F("MQTT_MAX_PACKET_SIZE exceeded"));
+			DEBUG_PRINTLN(F("MQTT_MAX_PACKET_SIZE exceeded"));
 			return (0xFF);
 		}
 	}
 	
-	len = pass.length();
+	len = strlen(pass);
 	if (len > 0) {
 		buffer[length] = (len >> 8) & 0x00FF; // password length MSB
 		length++;
 		buffer[length] = len & 0x00FF;        // password length LSB
 		length++;
 		for (byte k = 0; k < len; k++) {
-			buffer[length] = pass[k];
+			buffer[length] = *pass++;
 			length++;
 			if (length >= MQTT_MAX_PACKET_SIZE) {
-				Serial.println(F("MQTT_MAX_PACKET_SIZE exceeded"));
+				DEBUG_PRINTLN(F("MQTT_MAX_PACKET_SIZE exceeded"));
 				return (0xFF);
 			}
 		}
 	}
 	
-	String tmp = "0x";
-	String dat = String(buffer[0], HEX);
-	dat.toUpperCase();
-	tmp.concat(dat);
-	tmp.concat(F(" -> Connect request"));
-	gsm.debug(tmp);
-	Serial.println(tmp);
+	char tmp[30];
+	snprintf(tmp, sizeof(tmp), "\t---> 0x%02X - Connect request", buffer[0]);
+	DEBUG_PRINTLN(tmp);
 	
 	writeSSL(buffer, length);
 	
@@ -152,15 +153,15 @@ unsigned char UCxMQTTS::connectMQTTUser(String id, String user, String pass) {
 		previousMillis_ping = millis(); // Do not ping while trying to connect
 		mqttLoop();
 		if (connectAck == true) {
-			//Serial.println("Connect Ack!");
+			//DEBUG_PRINTLN("Connect Ack!");
 			break;
 		}
 	}
 	previousMillis_ping = millis();
 	
 	if (connectAck == true) {
-		//Serial.print("Connect return: ");
-		//Serial.println(connectReturnCode);
+		//DEBUG_PRINT("Connect return: ");
+		//SDEBUG_PRINTLN(connectReturnCode);
 		if (connectReturnCode != 0x00) {
 			connected = false;
 		}
@@ -177,76 +178,40 @@ bool UCxMQTTS::disconnectMQTTUser() {
 	
 	connected = false;
 	
-	String tmp = "0x";
-	String dat = String(buffer[0], HEX);
-	dat.toUpperCase();
-	tmp.concat(dat);
-	tmp.concat(F(" -> Disconnect request"));
-	gsm.debug(tmp);
-	Serial.println(tmp);
+	char tmp[30];
+	snprintf(tmp, sizeof(tmp), "\t---> 0x%02X - Disconnect request", buffer[0]);
+	DEBUG_PRINTLN(tmp);
+	
 	writeSSL(buffer, 2);
 	return true;
 }
 
-uint16_t UCxMQTTS::readDataFrom3GBufferMode() {
-	uint16_t ret = 99;
-	unsigned long pv_timeout = millis();;
-	const long interval_timeout = 5000;
-	bool state_data_in = false;
-	//Serial.println();
-	//Serial.println("testbuf");
-	//Serial.println();
+uint16_t UCxMQTTS::writeSSL(uint8_t *buf, uint16_t length) {
+	// uint16_t len_let = 0;
+	// if (ssl_mqtts.startSend(0, length)) {
+		// for (uint16_t itcp = 0; itcp < length; itcp++) {
+			// ssl_mqtts.write(buf[itcp]);
+			// len_let++;
+		// }
+		// if(!ssl_mqtts.waitSendFinish()) {
+			// //DEBUG_PRINTLN("false unfinish");
+			// connected = false;
+		// }
+	// } else {
+		// connected = false;
+		// //DEBUG_PRINTLN("startSend ERROR");
+	// }
+  // return (len_let);
 	
-	while(1) {
-		unsigned long current_timeout = millis();
-		ret = 0;
-		if (ssl_mqtts.receiveAvailable()) {
-			uint16_t len = ssl_mqtts.readBuffer(10);
-			//Serial.print("len = ");
-			//Serial.println(len);
-			while (len) {
-				if (gsm.available()) {
-					char c = gsm.read();
-					buffer[ret] = c;
-					ret++;
-					//Serial.print(c,HEX);
-					len--;
-				}
-			}
-			if (buffer[0] = 0x20) { // WHAT IS 0x20??
-				ret -= 1;
-				//Serial.println(ret);
-				return (ret);
-			}
-		}
-		if (current_timeout - pv_timeout >= interval_timeout) {
-			//Serial.println("readDataFrom3GBufferMode timeout");
-			return (-1);
-		}
-	}
-	
-}
-
-
-uint16_t UCxMQTTS::writeSSL(uint8_t* buf, uint16_t length) {
-	uint16_t len_let = 0;
-	if (ssl_mqtts.startSend(0, length)) {
-		for (uint16_t itcp = 0; itcp < length; itcp++) {
-			ssl_mqtts.write(buf[itcp]);
-			len_let++;
-		}
-		if(!ssl_mqtts.waitSendFinish()) {
-			//Serial.println("false unfinish");
-			connected = false;
-		}
-	} else {
+	bool sendOK = false;
+	sendOK = ssl_mqtts.send(0, buf, length);
+	if (sendOK != 0) {
 		connected = false;
-		//Serial.println("startSend ERROR");
 	}
-  return (len_let);
+	return sendOK;
 }
 
-String UCxMQTTS::connectCodeString(unsigned char input) {
+const __FlashStringHelper* UCxMQTTS::connectCodeString(unsigned char input) {
 	switch (input) {
 		case 0:			return F("0x00 Connection Accepted");
 		case 1:			return F("0x01 Connection Refused, unacceptable protocol version");
@@ -313,50 +278,11 @@ void UCxMQTTS::publish(char *topic, uint16_t lentopic, char *payload, uint16_t l
 		length++;
 	}
 	
-	String tmp = "0x";
-	String dat = String(buffer[0], HEX);
-	dat.toUpperCase();
-	tmp.concat(dat);
-	tmp.concat(F(" -> Publish message"));
-	gsm.debug(tmp);
-	Serial.println(tmp);
+	char tmp[30];
+	snprintf(tmp, sizeof(tmp), "\t---> 0x%02X - Publish message", buffer[0]);
+	DEBUG_PRINTLN(tmp);
+	
 	writeSSL(buffer, length);
-}
-
-void UCxMQTTS::publish(String topic, String payload, uint8_t qos) {
-	
-	char chartopic[topic.length()+2];
-	char charpay[payload.length()+2];
-	
-	for (uint16_t k = 0; k < topic.length(); k++) {
-		chartopic[k] = topic[k];
-	}
-	chartopic[topic.length()] = 0;
-	
-	for (uint16_t k = 0; k < payload.length(); k++) {
-		charpay[k] = payload[k];
-	}
-	charpay[payload.length()] = 0;
-	
-	publish(chartopic, topic.length(), charpay, payload.length(), qos);
-}
-
-void UCxMQTTS::publish(String topic, String payload) {
-	
-	char chartopic[topic.length()+2];
-	char charpay[payload.length()+2];
-	
-	for (uint16_t k = 0; k < topic.length(); k++) {
-		chartopic[k] = topic[k];
-	}
-	chartopic[topic.length()] = 0;
-	
-	for (uint16_t k = 0; k < payload.length(); k++) {
-		charpay[k] = payload[k];
-	}
-	charpay[payload.length()] = 0;
-	
-	publish(chartopic, topic.length(), charpay, payload.length(), MQTT_QOS_0);
 }
 
 void UCxMQTTS::subscribe(char *topic, uint16_t topiclen, uint8_t qos) {
@@ -380,36 +306,11 @@ void UCxMQTTS::subscribe(char *topic, uint16_t topiclen, uint8_t qos) {
 	buffer[all_len] = qos;
 	buffer[1] = all_len-1;
 	
-	String tmp = "0x";
-	String dat = String(buffer[0], HEX);
-	dat.toUpperCase();
-	tmp.concat(dat);
-	tmp.concat(F(" -> Subscribe request"));
-	gsm.debug(tmp);
-	Serial.println(tmp);
+	char tmp[30];
+	snprintf(tmp, sizeof(tmp), "\t---> 0x%02X - Subscribe request", buffer[0]);
+	DEBUG_PRINTLN(tmp);
+	
 	writeSSL(buffer, all_len+1);
-}
-
-void UCxMQTTS::subscribe(String topic, uint8_t qos) {
-	char chartopic[topic.length()+2];
-	
-	for (uint16_t k = 0; k < topic.length(); k++) {
-		chartopic[k] = topic[k];
-	}
-	chartopic[topic.length()] = 0;
-	
-	subscribe(chartopic, topic.length(), qos);
-}
-
-void UCxMQTTS::subscribe(String topic) {
-	char chartopic[topic.length()+2];
-	
-	for (uint16_t k = 0; k < topic.length(); k++) {
-		chartopic[k] = topic[k];
-	}
-	chartopic[topic.length()] = 0;
-	
-	subscribe(chartopic, topic.length(), MQTT_QOS_0);
 }
 
 void UCxMQTTS::unsubscribe(char *topic, uint16_t topiclen) {
@@ -433,25 +334,11 @@ void UCxMQTTS::unsubscribe(char *topic, uint16_t topiclen) {
 	
 	buffer[1] = all_len-2;
 	
-	String tmp = "0x";
-	String dat = String(buffer[0], HEX);
-	dat.toUpperCase();
-	tmp.concat(dat);
-	tmp.concat(F(" -> Unsubscribe request"));
-	gsm.debug(tmp);
-	Serial.println(tmp);
+	char tmp[30];
+	snprintf(tmp, sizeof(tmp), "\t---> 0x%02X - Unsubscribe request", buffer[0]);
+	DEBUG_PRINTLN(tmp);
+	
 	writeSSL(buffer, all_len);
-}
-
-void UCxMQTTS::unsubscribe(String topic) {
-	char chartopic[topic.length()+2];
-	
-	for (uint16_t k = 0; k < topic.length(); k++) {
-		chartopic[k] = topic[k];
-	}
-	chartopic[topic.length()] = 0;
-	
-	unsubscribe(chartopic, topic.length());
 }
 
 void UCxMQTTS::clearBuffer() {
@@ -465,19 +352,17 @@ void UCxMQTTS::ping() {
 	buffer[0] = MQTT_CTRL_PINGREQ << 4;
 	buffer[1] = 0x00;
 	
-	String tmp = F("0x");
-	String dat = String(buffer[0], HEX);
-	dat.toUpperCase();
-	tmp.concat(dat);
-	tmp.concat(F(" -> PING request"));
-	gsm.debug(tmp);
-	Serial.println(tmp);
+	char tmp[30];
+	snprintf(tmp, sizeof(tmp), "\t---> 0x%02X - PING request", buffer[0]);
+	DEBUG_PRINTLN(tmp);
+	
 	writeSSL(buffer, 2);
 }
 
 void UCxMQTTS::mqttLoop() {
 	unsigned char ret;
 	static byte ping_cnt = 0;
+	char tmp[350];
 	
 	if (millis() - previousMillis_ping > PING_INTERVAL) {
 		ping();
@@ -486,131 +371,100 @@ void UCxMQTTS::mqttLoop() {
 	}
 	
 	if (ping_cnt > MAX_PING_CNT) {
-		gsm.debug(F("Max ping cnt exceeded"));		
-		Serial.println(F("Max ping cnt exceeded"));
+		DEBUG_PRINTLN(F("Max ping cnt exceeded"));		
 		ping_cnt = 0;
 		connected = false;
 		return;
 	}
 	
 	uint16_t buf_cnt = 0;
-	while(1) {
+	//while(1) {
 		uint16_t len_in_buffer = readDataInBufferMode(1);
 		if (len_in_buffer == 0)	{
 			clearBuffer();
 			return;						
 		}
-		String tmp = F("0x");
-		String dat = String(buffer[0], HEX);
-		dat.toUpperCase();
-		tmp.concat(dat);
-		tmp.concat(F(" <- "));
-		gsm.debug(tmp);
-		Serial.print(tmp);
 		
 		switch (buffer[0]) {
 			case MQTT_CTRL_CONNECTACK << 4: // Connect acknowledgment
 				readDataInBufferMode(3);
 				connectReturnCode = buffer[2];
-				tmp = F("Connect acknowledgment: ");
-				tmp.concat(buffer[0]); // Remaining length
-				tmp.concat(",");
-				tmp.concat(buffer[1]); // Connect Acknowledge Flags
-				tmp.concat(",");
-				tmp.concat(buffer[2]); // Connect Return code
-				gsm.debug(tmp);
-				Serial.println(tmp);
+				
+				snprintf(tmp, sizeof(tmp), "\t<--- 0x%02X - Connect acknowledgment: %d,%d,%d", buffer[0], buffer[0], buffer[1], buffer[2]);
+				DEBUG_PRINTLN(tmp);
 				connectAck = true;
 				return;
 				break;
 			case MQTT_CTRL_PUBLISH << 4: // Publish message
-				gsm.debug(F("Publish message"));
-				Serial.println(F("Publish message"));
+				snprintf(tmp, sizeof(tmp), "\t<--- 0x%02X - Publish message", buffer[0]);
+				DEBUG_PRINTLN(tmp);
 				checkRXsub();
 				previousMillis_ping = millis(); // No need to ping now
 				return;
 				break;
 			case MQTT_CTRL_PUBACK << 4: // Publish acknowledgment
-				gsm.debug(F("Publish acknowledgment"));
-				Serial.println(F("Publish acknowledgment"));
+				snprintf(tmp, sizeof(tmp), "\t<--- 0x%02X - Publish acknowledgment", buffer[0]);
+				DEBUG_PRINTLN(tmp);
 				previousMillis_ping = millis(); // No need to ping now
 				break;
 			case MQTT_CTRL_PUBREC << 4: // Publish received (assured delivery part 1)
-				gsm.debug(F("Publish received (assured delivery part 1)"));
-				Serial.println(F("Publish received (assured delivery part 1)"));
+				snprintf(tmp, sizeof(tmp), "\t<--- 0x%02X - Publish received (assured delivery part 1)", buffer[0]);
+				DEBUG_PRINTLN(tmp);
 				previousMillis_ping = millis(); // No need to ping now
 				return;
 				break;
 			case MQTT_CTRL_PUBREL << 4: // Publish release (assured delivery part 2)
-				gsm.debug(F("Publish release (assured delivery part 2)"));
-				Serial.println(F("Publish release (assured delivery part 2)"));
+				snprintf(tmp, sizeof(tmp), "\t<--- 0x%02X - Publish release (assured delivery part 2)", buffer[0]);
+				DEBUG_PRINTLN(tmp);
 				previousMillis_ping = millis(); // No need to ping now
 				return;
 				break;
 			case MQTT_CTRL_PUBCOMP << 4: // Publish complete (assured delivery part 3)
-				gsm.debug(F("Publish complete (assured delivery part 3)"));
-				Serial.println(F("Publish complete (assured delivery part 3)"));
+				snprintf(tmp, sizeof(tmp), "\t<--- 0x%02X - Publish complete (assured delivery part 3)", buffer[0]);
+				DEBUG_PRINTLN(tmp);
 				previousMillis_ping = millis(); // No need to ping now
 				return;
 				break;
 			case 0x32: // rx_sub + retain
-				gsm.debug(F("Publish message with retain"));
-				Serial.println(F("Publish message with retain"));
+				snprintf(tmp, sizeof(tmp), "\t<--- 0x%02X - Publish message with retain", buffer[0]);
+				DEBUG_PRINTLN(tmp);
 				checkRXsub();
 				previousMillis_ping = millis(); // No need to ping now
 				return;
 				break;
 			case MQTT_CTRL_SUBACK << 4: // Subscribe acknowledgment
 				readDataInBufferMode(4);
-				tmp = F("Subscribe acknowledgment: ");
-				tmp.concat(buffer[0]); // Remaining length
-				tmp.concat(",");
-				tmp.concat(buffer[1]); // Packet identifier MSB
-				tmp.concat(",");
-				tmp.concat(buffer[2]); // Packet identifier LSB
-				tmp.concat(",");
-				tmp.concat(buffer[3]); // Return code
-				gsm.debug(tmp);
-				Serial.println(tmp);
+				snprintf(tmp, sizeof(tmp), "\t<--- 0x%02X - Subscribe acknowledgment: %d,%d,%d,%d", buffer[0], buffer[0], buffer[1], buffer[2], buffer[3]);
+				DEBUG_PRINTLN(tmp);
 				previousMillis_ping = millis(); // No need to ping now
 				return;
 			  break;
 			case MQTT_CTRL_UNSUBACK << 4: // Unsubscribe acknowledgment
 				readDataInBufferMode(3);
-				tmp = F("Unsubscribe acknowledgment: ");
-				tmp.concat(buffer[0]); // Remaining length
-				tmp.concat(",");
-				tmp.concat(buffer[1]); // Packet identifier MSB
-				tmp.concat(",");
-				tmp.concat(buffer[2]); // Packet identifier LSB
-				gsm.debug(tmp);
-				Serial.println(tmp);
+				snprintf(tmp, sizeof(tmp), "\t<--- 0x%02X - Unsubscribe acknowledgment: %d,%d,%d", buffer[0], buffer[0], buffer[1], buffer[2]);
+				DEBUG_PRINTLN(tmp);
 				previousMillis_ping = millis(); // No need to ping now
 				return;
 			  break;
 			case MQTT_CTRL_PINGRESP << 4: // PING response
-				
 				ping_cnt = 0;
 				readDataInBufferMode(1);
-				tmp = F("PING response: ");
-				tmp.concat(buffer[0]); // Remaining length
-				gsm.debug(tmp);
-				Serial.println(tmp);
+				snprintf(tmp, sizeof(tmp), "\t<--- 0x%02X - PING response:  %d", buffer[0], buffer[0]);
+				DEBUG_PRINTLN(tmp);
 				if(buffer[0] == 0x00) {
 					connected = true;
-					//Serial.println("ping ok");
+					//DEBUG_PRINTLN("ping ok");
 					return;
 				} else {
 					connected = false;
-					//Serial.println("ping fail");
+					//DEBUG_PRINTLN("ping fail");
 					clearBuffer();
 					return;	
 				}
-				
 				break;
 			default:
-				gsm.debug(F("Unknown Control Packet Type, clearing buffers?"));
-				Serial.println(F("Unknown Control Packet Type, clearing buffers?"));
+				snprintf(tmp, sizeof(tmp), "\t<--- 0x%02X - Unknown Control Packet Type, clearing buffers?", buffer[0]);
+				DEBUG_PRINTLN(tmp);
 				clearBuffer();
 				//gsm.flush(); // ?? Is this best or not??
 				return;
@@ -619,8 +473,7 @@ void UCxMQTTS::mqttLoop() {
 		if (connected == false) {
 			return;
 		}
-	}			
-
+	//}
 }
 
 void UCxMQTTS::checkRXsub() {
@@ -649,7 +502,6 @@ void UCxMQTTS::checkRXsub() {
 			}
 		} else {
 			payload[payload_cnt] = buffer[k];
-			//Serial.write(payload[payload_cnt]);
 			payload_cnt++;
 			//if(payload_cnt>100)
 			//	break;
@@ -669,14 +521,11 @@ uint16_t UCxMQTTS::readDataInBufferMode(uint16_t buf_len) {
 	uint16_t re_turn = len; 
 	uint16_t ret = 0;
 	
-	//Serial.println("");
-	//Serial.print("len = ");
-	//Serial.println(len);
-	
+	// THIS IS RISKY, IF MODEM DID NOT SEND CORRECT DATA WE GET STUCK IN WHILE
+	// WATCHDOG WILL RESET UNIT
 	while (len) {
 		if (gsm.available()) {
 			char c = gsm.read();
-			//Serial.print(c,HEX);
 			buffer[ret] = c;
 			ret++;
 			len--;
@@ -686,7 +535,7 @@ uint16_t UCxMQTTS::readDataInBufferMode(uint16_t buf_len) {
 	}
 	//}
 	//gsm.flush();
-	gsm.wait_ok_ndb(1000);
+	gsm.waitOK(1000);
 	return (re_turn);
 }
 

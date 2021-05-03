@@ -21,19 +21,19 @@ void setup()
   gsm.begin(&mySerial,9600);
   gsm.Event_debug = debug;
   Serial.println(F("UC20"));
-  gsm.PowerOn(); 
+  gsm.powerOn(); 
   while(gsm.WaitReady()){}
   Serial.print(F("GetOperator --> "));
   Serial.println(gsm.GetOperator());
   Serial.print(F("SignalQuality --> "));
   Serial.println(gsm.SignalQuality());
   Serial.println(F("Start GPS"));
-  gps.Start();
+  gps.start();
   Serial.println(F("Enable NMEA"));
-  gps.EnableNMEA();
+  gps.enableNMEA();
 }
 void loop() 
 {
-  Serial.println(gps.GetNMEA("GGA"));
+  Serial.println(gps.getNMEA("GGA"));
   delay(500);  
 }

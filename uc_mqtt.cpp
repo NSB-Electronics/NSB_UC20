@@ -159,7 +159,7 @@ int UCxMQTT::red_data_from_3G_buffermode()
 					len--;
 				}
 			}
-			if(buffer[0]=0x20)
+			if(buffer[0]==0x20)
 			{
 				ret-=1;
 				//Serial.println(ret);

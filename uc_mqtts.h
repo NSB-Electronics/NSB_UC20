@@ -60,30 +60,24 @@ class UCxMQTTS
 	uint8_t will_retain;
 	uint8_t buffer[MQTT_MAX_PACKET_SIZE];
 	uint16_t writeSSL(uint8_t* buf, uint16_t length); 
-	uint16_t readDataFrom3GBufferMode();
 	uint16_t readDataInBufferMode(uint16_t buf_len);
 	void checkRXsub();
 	
 	
 	public:
 	UCxMQTTS();
-	bool connectMQTTServer(unsigned char pdpid, unsigned char contextid, unsigned char clientid, String web, String port, unsigned char mode);
-	bool connectMQTTServer(unsigned char contextid, String web, String port);
-	bool connectMQTTServer(String web, String port);
-	bool disconnectMQTTServer(unsigned char clientid);
+	bool connectMQTTServer(uint8_t pdpid, uint8_t contextid, uint8_t clientid, char *serverAddr, uint16_t port, uint8_t accessMode);
+	bool connectMQTTServer(uint8_t contextid, char *serverAddr, uint16_t port);
+	bool connectMQTTServer(char *serverAddr, uint16_t port);
+	bool disconnectMQTTServer(uint8_t clientid);
 	bool disconnectMQTTServer();
 	bool connectState();
-	unsigned char connectMQTTUser(String id, String user, String pass);
+	unsigned char connectMQTTUser(char *id, char *user, char *pass);
 	bool disconnectMQTTUser();
-	String connectCodeString(unsigned char input);
+	const __FlashStringHelper* connectCodeString(unsigned char input);
 	void publish(char *topic, uint16_t lentopic, char *payload, uint16_t lenpay, uint8_t qos);
-	void publish(String topic, String payload, uint8_t qos);
-	void publish(String topic, String payload);
 	void subscribe(char *topic, uint16_t topiclen, uint8_t qos);
-	void subscribe(String topic, uint8_t qos);
-	void subscribe(String topic);
 	void unsubscribe(char *topic, uint16_t topiclen);
-	void unsubscribe(String topic);
 	void clearBuffer();
 	void ping();
 	void mqttLoop();

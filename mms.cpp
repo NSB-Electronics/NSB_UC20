@@ -8,7 +8,7 @@ bool MMS:: SetMMSC(String data)
 	gsm.print(F("AT+QMMSCFG=\"mmsc\",\""));
 	gsm.print(data);
 	gsm.println("\"");
-	return(gsm.wait_ok(3000));
+	return(gsm.waitOK(3000));
 }
 bool MMS:: SetProxy(String ip,String port)
 {
@@ -17,22 +17,22 @@ bool MMS:: SetProxy(String ip,String port)
 	gsm.print(ip);
 	gsm.print("\",");
 	gsm.println(port);
-	if(!gsm.wait_ok(3000))
+	if(!gsm.waitOK(3000))
 		return(false);
 	gsm.println(F("AT+QMMSCFG=\"sendparam\",6,2,0,0,0,4")); 
-	return(gsm.wait_ok(3000));
+	return(gsm.waitOK(3000));
 }
 bool MMS:: Title(String title)
 {
 	//AT+QMMSCFG="character","ASCII"
 	gsm.println(F("AT+QMMSCFG=\"character\",\"ASCII\""));
-	if(!gsm.wait_ok(3000))
+	if(!gsm.waitOK(3000))
 		return(false);
 	//AT+QMMSEDIT=4,1,"test uc15 mms" 
 	gsm.print(F("AT+QMMSEDIT=4,1,\""));
 	gsm.print(title);
 	gsm.println("\"");
-	return(gsm.wait_ok(3000));
+	return(gsm.waitOK(3000));
 }
 bool MMS:: SendTo(String receive)
 {
@@ -40,7 +40,7 @@ bool MMS:: SendTo(String receive)
 	gsm.print(F("AT+QMMSEDIT=1,1,\""));
 	gsm.print(receive);
 	gsm.println(F("\""));
-	return(gsm.wait_ok(3000));
+	return(gsm.waitOK(3000));
 }
 bool MMS:: AddFile(String pattern,String Filename)
 {
@@ -50,7 +50,7 @@ bool MMS:: AddFile(String pattern,String Filename)
 	gsm.print(F("AT+QMMSEDIT=5,1,\"RAM:"));	
 	gsm.print(Filename);
 	gsm.println(F("\""));
-	return(gsm.wait_ok(3000));
+	return(gsm.waitOK(3000));
 }
 String MMS::Send()
 {
@@ -58,7 +58,7 @@ String MMS::Send()
 	//+QMMSEND: 0,200 
 	while(!gsm.available())
 	{}
-	gsm.start_time_out();
+	unsigned long timeout = millis();
 	String req;
 	while(1)
 	{
@@ -71,13 +71,17 @@ String MMS::Send()
 		{
 			return(req);
 		}		
+		
+		if (millis() - timeout > 5000) { 
+			return "";
+		}
 	}
 	return(req);
 }
 bool MMS::Clear()
 {
 	gsm.println(F("AT+QMMSEDIT=0"));
-	return(gsm.wait_ok(3000));
+	return(gsm.waitOK(3000));
 }
 String MMS::ListMMSFile()
 {
@@ -85,7 +89,7 @@ String MMS::ListMMSFile()
 	gsm.println(F("AT+QMMSEDIT=5"));
 	while(!gsm.available())
 	{}
-	gsm.start_time_out();
+	unsigned long timeout = millis();
 	String req;
 	while(1)
 	{
@@ -94,37 +98,12 @@ String MMS::ListMMSFile()
 		if(req.indexOf(F("OK")) != -1)
 		{
 			return(data);
-		}		
+		}
+		
+		if (millis() - timeout > 5000) {
+			return ("");
+		}
 	}
 	return(data);
 	 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

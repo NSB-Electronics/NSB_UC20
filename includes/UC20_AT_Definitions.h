@@ -1,0 +1,189 @@
+#if (defined(ESP8266))
+	#include <pgmspace.h>
+#else
+	#include <avr/pgmspace.h>
+#endif
+
+#define UFS 	"UFS"
+#define RAM 	"RAM"
+#define COM 	"COM"
+
+#define NETWORK_NONE 		0
+#define NETWORK_HOME		1
+#define NETWORK_SEARCH	2
+#define NETWORK_DENIED	3
+#define NETWORK_UNKNOWN	4
+#define NETWORK_ROAMING	5
+
+#define RESET_DISABLE 	0
+#define RESET_ONETIME		1
+#define RESET_INTERVAL	2
+
+#define RESET_HOURLY	60
+#define RESET_DAILY		1440
+#define RESET_WEEKLY	10080
+#define RESET_MONTHLY	43200
+
+// COMMANDS
+const char CMD_AT[] PROGMEM = "AT";
+const char CMD_ECHO_OFF[] PROGMEM = "ATE0";
+const char CMD_ECHO_ON[] PROGMEM = "ATE1";
+const char CMD_POWER_OFF[] PROGMEM = "AT+QPOWD";
+const char CMD_RESET[] PROGMEM = "AT+QRST";
+const char CMD_DEFAULTS[] PROGMEM = "AT&F0";
+const char CMD_MODULE_INFO[] PROGMEM = "ATI";
+const char CMD_IMEI[] PROGMEM = "AT+GSN";
+const char CMD_CIMI[] PROGMEM = "AT+CIMI";
+const char CMD_QCCID[] PROGMEM = "AT+QCCID";
+const char CMD_SIGNAL_QUALITY[] PROGMEM = "AT+CSQ";
+const char CMD_NETWORK_TIME[] PROGMEM = "AT+QLTS=1";
+const char CMD_SIM_STATUS[] PROGMEM = "AT+CPIN?";
+const char CMD_SIM_DEL_MSG[] PROGMEM = "AT+CMGD";
+
+const char CMD_SMS_FORMAT[] PROGMEM = "AT+CMGF";
+const char CMD_SMS_CHAR_SET[] PROGMEM = "AT+CSCS";
+const char CMD_SMS_URC_CFG[] PROGMEM = "AT+QURCCFG";
+const char CMD_SMS_STORAGE[] PROGMEM = "AT+CPMS";
+const char CMD_SMS_PARAM[] PROGMEM = "AT+CSDH";
+const char CMD_SMS_LIST[] PROGMEM = "AT+CMGL";
+const char CMD_READ_SMS[] PROGMEM = "AT+CMGR";
+const char CMD_SEND_SMS[] PROGMEM = "AT+CMGS";
+const char CMD_SEND_USSD[] PROGMEM = "AT+CUSD";
+const char CMD_CLOSE_BRACKET[] PROGMEM = "> ";
+
+
+const char CMD_FILE_SPACE_UFS[] PROGMEM = "AT+QFLDS=\"UFS\"";
+const char CMD_FILE_SPACE_RAM[] PROGMEM = "AT+QFLDS=\"RAM\"";
+const char CMD_FILE_LIST[] PROGMEM = "AT+QFLST";
+const char CMD_FILE_DELETE[] PROGMEM = "AT+QFDEL";
+const char CMD_FILE_OPEN[] PROGMEM = "AT+QFOPEN";
+const char CMD_FILE_CLOSE[] PROGMEM = "AT+QFCLOSE";
+const char CMD_FILE_READ[] PROGMEM = "AT+QFREAD";
+const char CMD_FILE_WRITE[] PROGMEM = "AT+QFWRITE";
+const char CMD_FILE_SEEK[] PROGMEM = "AT+QFSEEK";
+const char CMD_FILE_FLUSH[] PROGMEM = "AT+QFFLUSH";
+const char CMD_FILE_POSITION[] PROGMEM = "AT+QFPOSITION";
+const char CMD_FILE_TUCAT[] PROGMEM = "AT+QFTUCAT";
+const char CMD_FILE_UPLOAD[] PROGMEM = "AT+QFUPL";
+
+const char CMD_TCP_CONF_CONTEXT[] PROGMEM = "AT+QICSGP";
+const char CMD_TCP_CONF_DNS[] PROGMEM = "AT+QIDNSCFG";
+const char CMD_TCP_ACT_PDP[] PROGMEM = "AT+QIACT";
+const char CMD_TCP_DEACT_PDP[] PROGMEM = "AT+QIDEACT";
+
+const char CMD_HTTP_CONF[] PROGMEM = "AT+QHTTPCFG";
+const char CMD_HTTP_URL[] PROGMEM = "AT+QHTTPURL";
+const char CMD_HTTP_GET[] PROGMEM = "AT+QHTTPGET";
+const char CMD_HTTP_POST[] PROGMEM = "AT+QHTTPPOST";
+const char CMD_HTTP_READ[] PROGMEM = "AT+QHTTPREAD";
+
+const char CMD_GPS_CONF[] PROGMEM = "AT+QGPSCFG";
+const char CMD_GPS_OPERATE[] PROGMEM = "AT+QGPS";
+const char CMD_GPS_TERMINATE[] PROGMEM = "AT+QGPSEND";
+const char CMD_GPS_LOC[] PROGMEM = "AT+QGPSLOC";
+
+const char CMD_SMTP_CONF[] PROGMEM = "AT+QSMTPCFG";
+const char CMD_SMTP_RECIPIENT[] PROGMEM = "AT+QSMTPDST";
+const char CMD_SMTP_SUBJECT[] PROGMEM = "AT+QSMTPSUB";
+const char CMD_SMTP_BODY[] PROGMEM = "AT+QSMTPBODY";
+const char CMD_SMTP_ATTACHMENT[] PROGMEM = "AT+QSMTPATT";
+const char CMD_SMTP_CLEAR[] PROGMEM = "AT+QSMTPCLR";
+const char CMD_SMTP_SEND[] PROGMEM = "AT+QSMTPPUT";
+
+const char CMD_SSL_CONF[] PROGMEM = "AT+QSSLCFG";
+const char CMD_SSL_OPEN[] PROGMEM = "AT+QSSLOPEN";
+const char CMD_SSL_CLOSE[] PROGMEM = "AT+QSSLCLOSE";
+const char CMD_SSL_SEND[] PROGMEM = "AT+QSSLSEND";
+const char CMD_SSL_RECV[] PROGMEM = "AT+QSSLRECV";
+const char CMD_SSL_STATE[] PROGMEM = "AT+QSSLSTATE";
+
+const char CMD_MQTT_CONF[] PROGMEM = "AT+QMTCFG";
+const char CMD_MQTT_OPEN[] PROGMEM = "AT+QMTOPEN";
+const char CMD_MQTT_CLOSE[] PROGMEM = "AT+QMTCLOSE";
+const char CMD_MQTT_CONNECT[] PROGMEM = "AT+QMTCONN";
+const char CMD_MQTT_DISCONNECT[] PROGMEM = "AT+QMTDISC";
+const char CMD_MQTT_PUBLISH[] PROGMEM = "AT+QMTPUB";
+const char CMD_MQTT_SUBSCRIBE[] PROGMEM = "AT+QMTSUB";
+const char CMD_MQTT_UNSUBSCRIBE[] PROGMEM = "AT+QMTUNS";
+
+// REPLIES
+const char REPLY_OK[] PROGMEM = "OK";
+const char REPLY_ERROR[] PROGMEM = "ERROR";
+const char REPLY_READY[] PROGMEM = "RDY";
+const char REPLY_POWER_DOWN[] PROGMEM = "POWERED DOWN";
+const char REPLY_RESET[] PROGMEM = "+QRST:";
+const char REPLY_ATE0[] PROGMEM = "ATE0";
+const char REPLY_REVISION[] PROGMEM = "Revision: ";
+const char REPLY_CREG[] PROGMEM = "+CREG:";
+const char REPLY_COPS[] PROGMEM = "+COPS:";
+const char REPLY_CSQ[] PROGMEM = "+CSQ:";
+const char REPLY_CLTS[] PROGMEM = "+CLTS:";
+const char REPLY_QCCID[] PROGMEM = "+QCCID: ";
+const char REPLY_CME_ERROR[] PROGMEM = "+CME ERROR";
+const char REPLY_CMS_ERROR[] PROGMEM = "+CMS ERROR";
+const char REPLY_CPIN[] PROGMEM = "+CPIN:";
+const char REPLY_SIM_NOT_READY[] PROGMEM = "+CPIN: NOT READY";
+const char REPLY_SIM_READY[] PROGMEM = "READY";
+const char REPLY_SIM_PIN[] PROGMEM = "SIM PIN";
+const char REPLY_SIM_PUK[] PROGMEM = "SIM PUK";
+const char REPLY_SIM_PUK2[] PROGMEM = "SIM PUK2";
+const char REPLY_READ_SMS[] PROGMEM = "+CMGR:";
+const char REPLY_SEND_SMS[] PROGMEM = "+CMGS:";
+const char REPLY_SMS_LIST[] PROGMEM = "+CMGL: ";
+const char REPLY_SMS_STORAGE[] PROGMEM = "+CPMS:";
+const char REPLY_SMS_USSD[] PROGMEM = "+CUSD:";
+const char REPLY_SMS_RECV[] PROGMEM = "+CMTI:";
+
+const char REPLY_GPS_LOC[] PROGMEM = "+QGPSLOC: ";
+
+const char REPLY_TCP_ACT_PDP[] PROGMEM = "+QIACT: ";
+const char REPLY_URC_PDP_DEACT[] PROGMEM = "+QIURC: \"pdpdeact\"";
+
+
+const char REPLY_FILE_SPACE[] PROGMEM = "+QFLDS:";
+const char REPLY_FILE_LIST[] PROGMEM = "+QFLST: ";
+const char REPLY_FILE_OPEN[] PROGMEM = "+QFOPEN:";
+const char REPLY_FILE_CLOSE[] PROGMEM = "+QFCLOSE:";
+const char REPLY_FILE_WRITE[] PROGMEM = "+QFWRITE:";
+const char REPLY_FILE_FLUSH[] PROGMEM = "+QFFLUSH:";
+const char REPLY_FILE_POSITION[] PROGMEM = "+QFPOSITION:";
+const char REPLY_FILE_UPLOAD[] PROGMEM = "+QFUPL:";
+
+const char REPLY_SMTP_PUT[] PROGMEM = "+QSMTPPUT: ";
+const char REPLY_SMTP_SEND[] PROGMEM = "QSMTPPUT: ";
+const char REPLY_SMTP_BODY[] PROGMEM = "+QSMTPBODY: ";
+const char REPLY_HTTP_GET[] PROGMEM = "+QHTTPGET:";
+
+const char REPLY_SSL_URC[] PROGMEM = "+QSSLURC: ";
+const char REPLY_SSL_OPEN[] PROGMEM = "+QSSLOPEN: ";
+const char REPLY_SSL_CLOSE[] PROGMEM = "+QSSLCLOSE: ";
+const char REPLY_SSL_SEND[] PROGMEM = "SEND OK";
+const char REPLY_SSL_RECV[] PROGMEM = "QSSLRECV: ";
+const char REPLY_SSL_STATE[] PROGMEM = "QSSLSTATE: ";
+
+
+const char REPLY_MQTT_OPEN[] PROGMEM = "+QMTOPEN: ";
+const char REPLY_MQTT_CLOSE[] PROGMEM = "+QMTCLOSE: ";
+const char REPLY_MQTT_CONNECT[] PROGMEM = "+QMTCONN: ";
+const char REPLY_MQTT_DISCONNECT[] PROGMEM = "+QMTDISC: ";
+const char REPLY_MQTT_SUBSCRIBE[] PROGMEM = "+QMTSUB: ";
+const char REPLY_MQTT_UNSUBSCRIBE[] PROGMEM = "+QMTUNS: ";
+const char REPLY_MQTT_PUBLISH[] PROGMEM = "+QMTPUB: ";
+const char REPLY_MQTT_RECV[] PROGMEM = "+QMTRECV: ";
+const char REPLY_MQTT_STAT[] PROGMEM = "+QMTSTAT: ";
+
+const char GET_NETWORK_STAT[] PROGMEM = "AT+CREG?";
+const char GET_NETWORK_OPER[] PROGMEM = "AT+COPS?";
+
+
+
+
+// 
+const char AVT1_OK[] PROGMEM = "OK";
+const char AVT1_CONNECT[] PROGMEM = "CONNECT";
+const char AVT1_RING[] PROGMEM = "RING";
+const char AVT1_NO_CARRIER[] PROGMEM = "NO CARRIER";
+const char AVT1_ERROR[] PROGMEM = "ERROR";
+const char AVT1_NO_DIALTONE[] PROGMEM = "NO DIALTONE";
+const char AVT1_BUSY[] PROGMEM = "BUSY";
+const char AVT1_NO_ANSWER[] PROGMEM = "NO ANSWER";

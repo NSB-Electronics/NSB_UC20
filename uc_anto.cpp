@@ -32,8 +32,8 @@ bool UCxANTO :: connectServer()
 	
 	do
 	{
-		gsm.debug(F("Connect Server"));
-		gsm.debug(F("wait connect"));
+		DEBUG_PRINTLN(F("\t---- Connect Server"));
+		DEBUG_PRINTLN(F("\t---- wait connect"));
 		if(mqtt_anto.DisconnectMQTTServer())
 		{
 			mqtt_anto.ConnectMQTTServer(ANTO_SERVER ,ANTO_PORT);
@@ -41,7 +41,7 @@ bool UCxANTO :: connectServer()
 		delay(500);
 	}
 	while(!mqtt_anto.ConnectState());
-	gsm.debug(F("Server Connected"));
+	DEBUG_PRINTLN(F("\t---- Server Connected"));
 	unsigned char ret = mqtt_anto.Connect(anto_Thing,anto_USER,anto_PASS);
 	Serial.println(mqtt_anto.ConnectReturnCode(ret));
 		if(ret==0)

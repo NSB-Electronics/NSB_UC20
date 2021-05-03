@@ -3,252 +3,177 @@
 SMTP::SMTP(){}
 
 
-bool SMTP::setSSLtype(unsigned char sslType) {
-	gsm.print(F("AT+QSMTPCFG=\"ssltype\","));
-	gsm.print(sslType, DEC);
-	gsm.println("");
-	return (gsm.wait_ok_ndb(3000));
+bool SMTP::setSSLtype(uint8_t sslType) {
+	bool responseOK = false;
+	char cmd[30];
+	
+	sprintf(cmd, "%s=\"ssltype\",%d", CMD_SMTP_CONF, sslType);
+	responseOK = gsm.sendCheckReply(cmd, REPLY_OK);
+	
+	return responseOK;
 }
 
-bool SMTP::setSSLtype() {
-	return (setSSLtype(SMTP_NO_SSL));
-}
-
-bool SMTP::setContextID(unsigned char contextid) {
-	gsm.print(F("AT+QSMTPCFG=\"contextid\","));
-	gsm.print(contextid, DEC);
-	gsm.println("");
-	return (gsm.wait_ok_ndb(3000));
-}
-
-bool SMTP::setContextID() {
-	return (setContextID(1));
-}
-
-bool SMTP::setSSLctxID(unsigned char sslctxid) {
-	gsm.print(F("AT+QSMTPCFG=\"sslctxid\","));
-	gsm.print(sslctxid, DEC);
-	gsm.println("");
-	return (gsm.wait_ok_ndb(3000));
-}
-
-bool SMTP::setSSLctxID() {
-	return (setSSLctxID(1));
+bool SMTP::setContextID(uint8_t contextid) {
+	bool responseOK = false;
+	char cmd[30];
+	
+	sprintf(cmd, "%s=\"contextid\",%d", CMD_SMTP_CONF, contextid);
+	responseOK = gsm.sendCheckReply(cmd, REPLY_OK);
+	
+	return responseOK;
 }
 
 
-bool SMTP::configServer(String srvaddr, unsigned int srvport) {	
-	gsm.print(F("AT+QSMTPCFG=\"smtpserver\",\""));
-	gsm.print(srvaddr);
-	gsm.print(F("\","));
-	gsm.print(srvport, DEC);
-	gsm.println("");
-	return (gsm.wait_ok_ndb(3000));
+bool SMTP::setSSLctxID(uint8_t sslctxid) {
+	bool responseOK = false;
+	char cmd[30];
+	
+	sprintf(cmd, "%s=\"sslctxid\",%d", CMD_SMTP_CONF, sslctxid);
+	responseOK = gsm.sendCheckReply(cmd, REPLY_OK);
+	
+	return responseOK;
 }
 
 
-bool SMTP::setAccount(String username, String password) {
-	gsm.print(F("AT+QSMTPCFG=\"account\",\""));
-	gsm.print(username);
-	gsm.print(F("\",\""));
-	gsm.print(password);
-	gsm.println(F("\""));
-	return (gsm.wait_ok_ndb(3000));
+bool SMTP::configServer(char *srvaddr, uint16_t srvport) {
+	bool responseOK = false;
+	char cmd[80];
+	
+	if (strlen(srvaddr) <= 50) {
+		sprintf(cmd, "%s=\"smtpserver\",\"%s\",%d", CMD_SMTP_CONF, srvaddr, srvport);
+		responseOK = gsm.sendCheckReply(cmd, REPLY_OK);
+	} else {
+		// Server address too long
+	}
+	
+	return responseOK;
 }
 
 
-bool SMTP::setSender(String senderName, String senderEmail) {
-	gsm.print(F("AT+QSMTPCFG=\"sender\",\""));
-	gsm.print(senderName);
-	gsm.print(F("\",\""));
-	gsm.print(senderEmail);
-	gsm.println(F("\""));
-	return (gsm.wait_ok_ndb(3000));
+bool SMTP::setAccount(char *username, char *password) {
+	bool responseOK = false;
+	char cmd[130];
+	
+	if ((strlen(username) <= 50) && (strlen(password) <= 50)) {
+		sprintf(cmd, "%s=\"account\",\"%s\",\"%s\"", CMD_SMTP_CONF, username, password);
+		responseOK = gsm.sendCheckReply(cmd, REPLY_OK);
+	} else {
+		// Username or password too long
+	}
+	
+	return responseOK;
 }
 
 
-bool SMTP::addRecipient(unsigned char type, String emailaddr) {
-	gsm.print(F("AT+QSMTPDST=1,"));
-	gsm.print(type, DEC);
-	gsm.print(F(",\""));
-	gsm.print(emailaddr);
-	gsm.println(F("\""));
-	return (gsm.wait_ok_ndb(3000));
+bool SMTP::setSender(char *senderName, char *senderEmail) {
+	bool responseOK = false;
+	char cmd[130];
+	
+	if ((strlen(senderName) <= 50) && (strlen(senderEmail) <= 50)) {
+		sprintf(cmd, "%s=\"sender\",\"%s\",\"%s\"", CMD_SMTP_CONF, senderName, senderEmail);
+		responseOK = gsm.sendCheckReply(cmd, REPLY_OK);
+	} else {
+		// Sender or email address too long
+	}
+	
+	return responseOK;
 }
 
 
-bool SMTP::addRecipient(String emailaddr) {
-	return (addRecipient(SMTP_TO, emailaddr));
+bool SMTP::addRecipient(char *emailaddr, uint8_t type) {
+	bool responseOK = false;
+	char cmd[80];
+	
+	if (strlen(emailaddr) <= 50) {
+		sprintf(cmd, "%s=%d,%d,\"%s\"", CMD_SMTP_RECIPIENT, SMTP_ADD, type, emailaddr);
+		responseOK = gsm.sendCheckReply(cmd, REPLY_OK);
+	} else {
+		// Email address too long
+	}
+	
+	return responseOK;
 }
 
 bool SMTP::deleteRecipients() {
-	gsm.println(F("AT+QSMTPDST=0"));
-	return (gsm.wait_ok_ndb(3000));
+	bool responseOK = false;
+	char cmd[30];
+	
+	sprintf(cmd, "%s=%d", CMD_SMTP_RECIPIENT, SMTP_DELETE);
+	responseOK = gsm.sendCheckReply(cmd, REPLY_OK);
+	
+	return responseOK;
 }
 
-bool SMTP::setSubject(unsigned char charset, String subject) {
-	gsm.print(F("AT+QSMTPSUB="));
-	gsm.print(charset, DEC);
-	gsm.print(F(",\""));
-	gsm.print(subject);
-	gsm.println(F("\""));
-	return (gsm.wait_ok_ndb(3000));
-}
-
-bool SMTP::setSubject(String subject) {
-	return (setSubject(SMTP_ASCII, subject));
-}
-
-
-bool SMTP::startBody(unsigned char charset, unsigned int bodyLength, unsigned int inputTime) {
-	bool timedOut = false;
-	String req;
+bool SMTP::setSubject(char *subject, uint8_t charset) {
+	bool responseOK = false;
+	char cmd[130];
 	
-	gsm.print(F("AT+QSMTPBODY="));
-	gsm.print(charset, DEC);
-	gsm.print(F(","));
-	gsm.print(bodyLength, DEC);
-	gsm.print(F(","));
-	gsm.print(inputTime, DEC);
-	gsm.println(F(""));
-	
-	while(!gsm.available()) {}
-	gsm.start_time_out();
-	
-	while(!timedOut) {
-		req = gsm.readStringUntil('\r\n');
-		
-		if (req.indexOf(F("CONNECT")) != -1) {
-			return true;
-		}
-		if (gsm.time_out(3000)) {
-			timedOut = true;
-			Serial.println(F("\r\SMTP Start Body timeout"));
-			gsm.debug(F("\r\SMTP Start Body timeout"));
-		}
+	if (strlen(subject) <= 100) {
+		sprintf(cmd, "%s=%d,\"%s\"", CMD_SMTP_SUBJECT, charset, subject);
+		responseOK = gsm.sendCheckReply(cmd, REPLY_OK);
+	} else {
+		// Subject too long
 	}
 	
-	return false;
+	return responseOK;
 }
 
-bool SMTP::startBody(unsigned int bodyLength) {
-	startBody(SMTP_ASCII, bodyLength, 3);
-}
-
-bool SMTP::startBody() {
-	startBody(SMTP_ASCII, 10240, 3);
-}
-
-void SMTP::addBody(String data) {
-	gsm.print(data);
-
-}
-
-void SMTP::addBodyln(String data) {
-	addBody(data+"\r\n");
-}
-
-int SMTP::stopBody(unsigned int inputTime) {
-	bool timedOut = false;
-	String req;
-	int bodyLength = 0;
+bool SMTP::setBody(char *body, uint8_t charset, uint16_t inputTime) {
+	bool responseOK = false;
+	char cmd[30];
 	
-	delay(1100); // Otherwise +++ is misinterpreted as data
-	gsm.print(F("+++")); // Send end input
-	delay(1100);
-	
-	//while (!gsm.available()) {}
-	gsm.start_time_out();
-	
-	while(!timedOut) {
-		req = gsm.readStringUntil('\r\n');
-		
-		if (req.indexOf(F("+QSMTPBODY")) != -1) {
-			char index1 = req.indexOf(F(":"));
-			bodyLength = req.substring(index1+2).toInt();
-			
-		}
-		if (req.indexOf(F("OK")) != -1) {
-			return bodyLength;
-		}
-		if (req.indexOf(F("ERROR")) != -1) {
-			return (-1);
-		}
-		if (gsm.time_out(inputTime+1000)) {
-			timedOut = true;
-			Serial.println(F("\r\SMTP Stop Body timeout"));
-			gsm.debug(F("\r\SMTP Stop Body timeout"));
-		}
-	}
-	return -1;
-}
-
-
-int SMTP::stopBody() {
-	stopBody(3);
-}
-
-
-bool SMTP::addAttachment(unsigned char fileIndex, String filename) {
-	gsm.print(F("AT+QSMTPATT=1,"));
-	gsm.print(fileIndex, DEC);
-	gsm.print(F(","));
-	gsm.print(F("\""));
-	gsm.print(filename);
-	gsm.println(F("\""));
-	
-	return (gsm.wait_ok_ndb(3000));
-}
-
-bool SMTP::addAttachment(String filename) {
-	return addAttachment(1, filename);
-}
-
-bool SMTP::sendEmail(unsigned int timeout) {
-	bool timedOut = false;
-	String req;
-	gsm.print(F("AT+QSMTPPUT="));
-	gsm.print(timeout, DEC);
-	gsm.println("");
-	
-	return (gsm.wait_ok_ndb(3000));
-	
-	/*while (!gsm.available()) {}
-	gsm.start_time_out();
-	
-	while(!timedOut) {
-		req = gsm.readStringUntil('\r\n');
-		Serial.println(req);
-		if (req.indexOf(F("+QSMTPPUT")) != -1) {
-			char index1 = req.indexOf(F(":"));
-			char index2 = req.indexOf(F(","));
-			if (index2 == -1) {
-				index2 = sizeof(req);
-			}
-			
-			if (req.substring(index1+2, index2).toInt() == 0) {
-				return 1;
+	if (strlen(body) <= 10000) {
+		sprintf(cmd, "%s=%d,%d,%d", CMD_SMTP_BODY, charset, strlen(body), inputTime);
+		responseOK = gsm.sendCheckReply(cmd, AVT1_CONNECT);
+		if (responseOK) {
+			responseOK = gsm.sendCheckReply(body, REPLY_SMTP_BODY);
+			if (responseOK) {
+				responseOK = gsm.waitReply(REPLY_OK);
 			} else {
-				return req.substring(index1+2, index2).toInt();
-			}
-		}
-		
-		if (gsm.time_out(timeout*1000 + 5000)) {
-			timedOut = true;
-			gsm.debug(F("\r\SMTP SENDEMAIL timeout"));
-		}
+				// Command failed
+			}	
+		} else {
+		// Command failed
+		}		
+	} else {
+		// Body too long
 	}
 	
-	return 0; 
-	*/
+	return responseOK;
 }
 
 
-bool SMTP::sendEmail() {
-	return sendEmail(300);
+bool SMTP::addAttachment(char *filename, uint8_t fileIndex) {
+	bool responseOK = false;
+	char cmd[80];
+	
+	if (strlen(filename) <= 50) {
+		sprintf(cmd, "%s=%d,%d,\"%s\"", CMD_SMTP_ATTACHMENT, SMTP_ADD, fileIndex, filename);
+		responseOK = gsm.sendCheckReply(cmd, REPLY_OK);
+	} else {
+		// Filename too long
+	}
+	
+	return responseOK;
 }
+
 
 bool SMTP::clearContent() {
-	gsm.println(F("AT+QSMTPCLR"));
-	return (gsm.wait_ok_ndb(3000));
+	bool responseOK = false;
+	char cmd[20];
+	
+	sprintf(cmd, "%s", CMD_SMTP_CLEAR);
+	responseOK = gsm.sendCheckReply(cmd, REPLY_OK);
+	
+	return responseOK;
+}
+
+bool SMTP::sendEmail(uint16_t timeout) {
+	bool responseOK = false;
+	char cmd[20];
+	
+	sprintf(cmd, "%s=%d", CMD_SMTP_SEND, timeout);
+	responseOK = gsm.sendCheckReply(cmd, REPLY_OK);
+	
+	return responseOK;
 }

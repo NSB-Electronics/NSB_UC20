@@ -46,21 +46,23 @@ bool UCxAUDIO::readinput()
 		if(gsm.available())
 		{
 			String req = gsm.readStringUntil('\n');
-			//gsm.debug(req);
+			//DEBUG_PRINTLN(req);
 			if(req.indexOf(F("OK"))!= -1)
 			{		
-				gsm.debug(req);
+				DEBUG_PRINT("\t---- ");
+				DEBUG_PRINTLN(req);
 				return(true);	
 			}
 			else
 			{		
-				gsm.debug(req);
+				DEBUG_PRINT("\t---- ");
+				DEBUG_PRINTLN(req);
 				return(false);	
 			}
 		}
 		if(currentMillis - previousMillis >= interval) 
 		{
-			gsm.debug(F("Response Timeout"));
+			DEBUG_PRINTLN(F("\t---- Audio readinput Response Timeout"));
 			return(false);
 			previousMillis = currentMillis; 	
 		}
@@ -102,17 +104,17 @@ void UCxAUDIO::taskAudio()
 			String req = gsm.readStringUntil('\n');
 			if(req.indexOf(F("QPSND: 0"))!= -1)
 			{		
-				gsm.debug(F("End Sound"));
+				DEBUG_PRINTLN(F("\t---- End Sound"));
 				flag_status_play = false;				
 			}
 			if(req.indexOf(F("QAUDPLAY: 0"))!= -1)
 			{		
-				gsm.debug(F("End Sound"));
+				DEBUG_PRINTLN(F("\t---- End Sound"));
 				flag_status_play = false;				
 			}
 			if(req.indexOf(F("QTTS: 0"))!= -1)
 			{		
-				gsm.debug(F("End Sound"));
+				DEBUG_PRINTLN(F("\t---- End Sound"));
 				flag_status_play = false;				
 			}
 	}
